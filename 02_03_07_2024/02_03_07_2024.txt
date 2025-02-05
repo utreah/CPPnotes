@@ -1,0 +1,224 @@
+CPP dilinde daha katý(strict) bir type checking var.
+	C de olan bazý okey dönüþümler ve atamalar, CPP dilinde sentaks hatasý.
+
+String literallari C dilinde char[] türünde iken CPP dilinde const char[] türünde.
+	CPP'de bir string literalinin deðiþtirilmeye çalýþýlmasý sentaks hatasý.
+	C dilinde ise Tanýmsýz Davranýþ.
+		char* p = "engin"; -> burada array decay olduðu için C dilinde okey, ama CPP'de string literalleri const olduðu için
+			ve implicit type conversion olmadýðý için bu sentaks hatasý. "engin" string literali explicit olarak char* türüne cast edilmeli
+				ya da nesne const olarak nitelenmeli.
+
+	C dilinde character constant(karakter sabitleri) int türü olarak kabul ediliyor. 'A' -> int türünden 65
+	CPP dilinde 2 farklýlýk var.
+		1- Bunlara character literal deniyor. Fakat bu farklýlýk çokta önemli deðil. Ýkisi de kullanýlýyor.
+		2- int türü deðil char türünden. Yani 'A' sabiti char türünden 65.
+
+
+	Logic karþýlaþtýrma, karþýlaþtýrma operatörlerinin ürettiði deðer C dilinde signed int türünden 1 ve 0.
+	CPP dilinde ise, bool adlý bir veri türü var. Bu veri türünün 'true' ve 'false' olarak 2 adet keywordü var.
+		CPP'de C de olduðu gibi bool bir makro, tür-eþ ismi deðil bir tür.
+	C99 ile beraber C diline _Bool eklendi. Fakat, true ve false keyword deðil.
+		stdbool.h dahil edilirse buradaki true ve false(makro) kullanýlabilir. Fakat bool türü C dilinde çok kullanýlmýyor.
+			Onun yerine boolean int kullanýlýyor. 
+	CPP de boolean veri türü olmasý ileride göreceðimiz function overloading konusu için önemli. Ayný þekilde character literal/constant	
+		farký da önemli.
+
+	Aritmetik türlerden bool'a dönüþüm var.
+		Nonzero deðerler true, zero deðer false. Booldan aritmetik türlere de dönüþüm var.
+	Integral promotion iki dil için de geçerli. 
+
+	CPP dilinde pointer türünden boolean türüne örtülü dönüþüm var. Adresler true, nullptr false deðerini veriyor bool türüne.
+
+	CPP14 ile beraber boolean türünde increment/decrement operatörünün kullanýlmasý sentaks hatasý oldu.
+		int main(void){
+			bool b = 0;
+			b++; // bu cpp14 öncesi ok ama cpp14 ile beraber sentaks hatasý
+		}
+
+	bool'un sizeof deðeri derleyicinin kararýnda. Ama ana akým bir çok derleyici de bool 1 byte.as 
+
+
+	char str[4] = "mert"; // Bu C dilinde geçerli. NTBS kullanmadýðým sürece sýkýntý yok.
+	puts(str); // Burada mesela Undefined Behaviour var. Çünkü str char dizisinde null karakteri yok.
+
+	char str[4] = "okan"; // Bu CPP'de direkt olarak sentaks hatasý. Bunun sebebi char dizilerine otomatik olarak null karakterine eklemesi.
+							// yani 4 eleman alabilen char dizisine CPP standart gereði 4 karakter + null karakterini eklemeye çalýþacaðý için
+								// sentaks hatasý olacak. 
+
+
+	Aritmetik ifadelerden pointer türüne dönüþüm CPP'de sentaks hatasý veriyor.
+	int main(void){
+		int x = 5;
+		int y = 10;
+		int* p = x; // Bu C dilinde geçerli. Implicit conversion olacak x int* türüne cast edilecek.
+						// Fakat bilerek isteyerek kullanýlabilecek bir þey deðil. Olur da bilerek yaptýk, bunun bilgisini vermek için
+							// int* p = (int*)x; þeklinde yazmalýyýz. 
+						// CPP dilinde bu direkt olarak sentaks hatasý.
+		p = y; // Ayný durum. C dilinde ok, cpp sentaks.
+	}
+	
+	Örtülü dönüþümlerin sentaks hatasý olduðu durumlar fakat her örtülü dönüþüm sentaks hatasý deðil.
+		CPP'de standart tarafýndan belirlenmiþ, belirli türler arasýnda olan "narrowing conversion" denilen bir durum var.
+			Mesela int türden bir nesneye double türden bir deðer atanýrsa buna narrowing conversion denir. Implicit olarka yapýlýr ve sentaks hatasý yok.
+		Pointer türünden bool türüne de implicit conversion var. Bu narrowing conversion deðil.
+
+		int main(void){
+			double dval = 2.4;
+			int x = dval; // narrowing conversion
+		}
+
+	Incompatible typeslara dikkat etmek gerekiyor. 
+		int* türünden char* türüne veya tam tersi, dönüþüm yapmakta bir sorun yok.
+		Veya char* türünden herhangi bir türün pointerýna dönüþtürmekte de sýkýntý yok.
+		Ayný türün signed ve unsigned arasýnda yapýlan dönüþümde de sorun yok.
+		Fakat;
+		int main(void){
+			int x = 10;
+			float* f = (float*)&x; // burada tür dönüþüm operatörü kullanýldý diye bu kabul edilebilir olmuyor.
+										// incompatible type olduðu için her türlü hata ve böyle bir þey yapýlmamalý. C CPP fark etmez.
+		}
+			CPP'de farklý adres türleri arasýnda dönüþüm yok!
+
+		void* türünden baþka pointer türlerine dönüþüm;
+			-C dilinde legal ve sýkýntý yok. Implicit olarak dönüþtürülüyor.
+			-CPP dilinde implicit dönüþüm yok, sentaks hatasý olur. Explicit olarka type-cast operatörü ile dönüþtürülmesi gerkeli.
+		Fakat, tam tersi yani baþka pointer türlerinden void* türüne dönüþüm implicit olarak hem C hem de CPP de yapýlýyor.
+		int x = 10;
+		void* vp = &x; // bu hem C hem de CPP'de legal.
+		int* ip = vp; // bu C de legal, CPP de sentaks hatasý. int* ip = (int*)vp; þeklinde yazýlmalý.
+
+		C dilinde malloc'un geri dönüþ deðerini type cast kullanmadan kullanabiliyor iken CPP de type cast ile 
+			dönüþtürülmez ise sentaks hatasý veriyor.
+			Her ne kadar C dilinde gerekmese de hem dökümante etmesi kolay olsun diye hem de CPP uyumluluðu için
+				type cast kullanýlabilir.
+
+		CPP dilinin kendine ait type cast operatörleri var.
+		-const_cast
+		-static_cast
+		-reinterpret_cast
+		-dynamic_cast
+			Aðýrlýklý olarak bu operatörler kullanýlacak CPP dilinde.
+
+	// ARITMETIK TURLER = int double float vs.
+/--------------------------------------------------------------------------------------------------------------------------/
+CONST FARKLILIKLARI
+
+Bir kodun kalitesini belirleyen hem C hem de CPP için kullanýlan terim 'const correctness' (const doðruluðu)
+	const olmasý gereken her yerde const kullanýlmasý gerektiðini söylüyor.
+
+
+-C dilinde sabit ifade gereken yerlerde const expression kullanýlamýyor. 
+int foo(void);
+int main(void){
+	const int x = 10;
+	int a[x] = {0};
+	/*
+		x burada ilk deðerini almýþ const bir ifade olmasýna raðmen, dizinin boyutunu belirlemek için kullanýlamýyor. C dilinde
+			bu sentaks hatasý. CPP'de ise bu durum sorunsuz çalýþýr.
+		C dilinde switchte de kullanýlamýyor x. Sabit bir ifade istiyor labellar için. CPP de sýkýntý yok const expr kullanýlabilir.
+
+		ÖNEMLÝ! 
+			CPP dilinde const ifadenin, sabit ifadenin gerektiði yerde kullanýlabilmesi için sabit bir deðer ile ilk deðer almasý gerekiyor.
+	*/
+	const int y = foo();
+	int a[y] = {0}; // y'nin ilk deðeri sabit bir ifade deðil. O yüzden burada kullanýlamaz hem c hem de cppde illegal.
+}
+
+
+
+-Global alanda tanýmlanan const ifadeler.
+	C dilinde global alanda tanýmlanan const ifadelere ilk deðer verilmediði durumda 0 deðeri ile hayata gelir.	
+		bu ifadenin bir aritmetik türden nesneye kopyalanmasýnda sorun yok.
+	CPP dilinde const nesneler ilk deðer verilerek hayata baþlama zorunluluðu var. Ýlk deðer verilmez ise sentaks hatasý.
+
+
+EN ÖNEMLÝ FARK.
+-Ýki dil arasýnda const nesnelerin linkagelarý farklý.
+	Nedir linkage? Link aþamasýnda bazý fonksiyonlarýn diðer kaynak dosyalarýnda kullanýlmasýný veya kullanýlmamasýný saðlayan
+		ona göre derleme iþlemi yapmasýný saðlayan bir yapý. internal, external linkage ve no linkage olmak üzere üçe ayrýlýyor.
+		internal linkage'a ait ise, sadece bulunduðu kaynak dosyasý içerisindeki kodlar tarafýndan çaðýrýlabilir/kullanýlabilir.
+		External linkage'a ait ise, bulunduðu ve kaynak dosyasýnýn include edildiði her dosyada eriþelebilmesini saðlýyor.
+	
+	
+	Global spaceda tanýmlanmýþ deðiþkenler/fonksiyonlar default olarak external linkage'a ait.
+		C dilinde bunlarý internal linkage a ait yapmak istersek baþlarýa static keywordünü eklemeliyiz.
+			static int x = 10; // static int foo(void); gibi.
+			const keywordü nesneleri internal linkage'a ait yapmýyor.
+		CPP dilinde ise eðer global namespacede bir nesne de const keywordü var ise o nesne internal linkage ait oluyor.
+			const int x = 10; // sanki c'de static int x = 10; yazmýþýz gibi 
+		Hem const hem de external yapmak istiyor isek
+			extern const int x = 10; // yapmamýz gerek
+
+
+-static/global nesnelere const ifade ile ilk deðer verilebilmesi/verilememesi
+
+	C dilinde statik ömürlü/global tanýmlanmýþ deðiþkenlerin ilk deðerleri constant expression olmasý zorunlu.
+		int x = 10;
+		int y = x; // bu legal deðil, çünkü x const expr deðil. Ayný durum int x = 10; static int y = x; içinde geçerli.
+	CPP dilinde böyle bir kýsýtlama yok. statik/globalde tanýmlanmýþ nesnelere verilen ilk deðerin sabit ifade olmasý
+		gerekmiyor.
+
+	Bu örnek CPP dili için
+	#include <cstdio>
+	int foo(); // function declaration
+	int fg = foo(); // Bu C dilinde hata, CPP'de ok. Örnek baþka bir þeyi anlatmak için
+
+	int main(void){
+		printf("main cagrildi\n");
+	}
+	int foo(){
+		printf("foo cagrildi");
+		return 5;
+	}
+
+	Yukarýdaki kodda normalde program derlendiðinde ve baþlatýldýðýnda ilk olarka main fonksiyonu çaðrýlýr.
+		Fakat fg global deðiþkeninin ilk deðerini alabilmesi için foo fonksiyonunun çaðrýlmasý gerekiyor. main fonksiyonundan önce
+			bunu kullanarak baþka fonksiyonlarý çaðýrabiliriz. Ekrana
+				"foo cagrildi"
+				"main cagrildi" þeklinde yazýlýr. 
+
+/--------------------------------------------------------------------------------------------------------------------------/
+VERÝ TÜRLERÝ ARASINDAKÝ FARKLILIKLAR 
+
+C dilinde 2 adet tür var.
+	-Basic(primitive) types 
+	-User-defined types -> struct, enum, union
+CPP dilinde de ayný þekilde ikiye ayrýlýyor. Aralarýnda bazý terim farklýlýklarý var.
+	Mesela structlar cpp dilinde class olarak daha geniþ. CPP dilinde structta class da class-type.
+
+
+	C dilinde structlarýn içinde en az 1 adet tanýmlý struct member bulunmasý gerekiyor.
+	struct nomember{
+
+	}; // c dilinde bu sentaks hatasý
+	CPP dilinde ise burada bir hata yok. Buna empty struct deniyor ve sýkça kullanýlýyor.
+
+User-defined type ile oluþturulan nesnelerde keywordün oluþturduðu fark.
+	C dilinde user-defined types ile oluþturulan nesnelerde sadece o türün tagi kullanýlmasý türü nitelemiyor.
+		Türün baþýnda ayný zamanda keywordte olmalý. Ya da typedef declaration kullanarak bu keywordten kurtulabiliriz.
+	struct nec{
+		int a;
+	};
+	int main(void){
+		nec mynec; // Bu C dilinde sentaks hatasý. Çünkü struct tagi(nec) o türü nitelemiyor. Bundan dolayý tag'in baþýnda
+						// hangi türe ait ise o olmalý.
+		struct nec mynec; // bu c dilinde legal
+	}
+	CPP dilinde ise keywordün kullanýlmasýna gerek yok. Oluþturulan user-defined typesýn tagi o türü nitelemek için yeterli.
+	struct nec{
+		int a;
+	};
+	int main(void){
+		nec mynec; // CPP dilinde legal.
+		struct nec mynec; // bu da legal.
+	}
+/--------------------------------------------------------------------------------------------------------------------------/
+ENUMERATIONS FARKLILIKLARI 
+	1:20:00
+
+C dilinin standartýnda olan kütüphaneler CPP standardýnýn bir bileþeni kabul ediliyor. Tek fark, include ederken
+	#include <stdio.h> yazmak yerine .h yerine cstdio þeklinde yazmamýz gerekiyor.
+	#include <time.h> ==> #include <ctime>
+	#include <ctype.h> ==> #include <cctype> // lol
+
+
