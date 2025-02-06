@@ -1,0 +1,100 @@
+INITIALIZATION
+	CPP de C ye nazaran daha farklý init yöntemi var.
+
+- Default init : T x; 
+	Ýlk deðer verilmeden, hayata indetermined value ile baþlatýlan init türü.
+		Bu þekilde yapýlan initlerden mümkün olduðunca kaçýnýlmalý.
+- Zero init : Bu bir initialization kategorisi deðil. Bu daha çok diðer initializationlarýn ön basamaðý.
+	*Statik ömürlü deðiþkenler.
+	*Global namespaceda tanýmlanan deðiþkenler.
+- Copy init : T x = val;
+	Bu nesneye deðerin kopyalanarak ilk deðer verme iþlemi yapýldýðý anlamýna geliyor.
+- Direct init : T x(val);
+	Bu initialization türü C dilinde yok. Buna direct initialization deniyor.
+- Brace/Uniform init : T x{val}
+	Uniform-> Tek biçimli anlamýna geliyor. Initialization konusu çok karmaþýk olduðu için süslü parantez ile tek bir nesneye
+		deðer verebilmenin yolu modern cpp ile açýldý. Brace ve Uniform init terimleri standart terimler deðil. Popüler terimler.
+			Standart terimi 'direct list initialization'
+		Süslü parantezler modern cpp öncesi sadece Aggregate türler için geçerliydi. Yani dizilerin ya da struct memberlarý gibi
+			yapýlarda ilk deðer verme için kullanýlabiliyordu.
+		Neden uniform initialization eklendi?
+			1- Narrowing conversion -> Diðer init kategorilerinde eðer iki tür arasýnda narrowing conversion(standart belirliyor bunlarý)
+				var ise bu sadece warning olarak derleyici tarafýndan veriliyor. Derleme aþamasýnda bir sentaks hatasý yok. Fakat,
+					uniform init ile define edilen bir nesne narrowing conversion olmasý durumunda sentaks hatasý veriyor.
+			2- Tek bir þekilde initialize iþlemi yapmamýza saðlýyor. Yani bazen direct kullanýrken bazen copy kullanmak yerine
+				tek þekil, tek biçimde initialize etme iþlemini saðlýyor. 
+			BU ÇOK ÖNEMLÝ! MÜLAKATLARDA SORULUYOR!!! 3 numara
+			3- Most Vexing Parse -> Deðiþken tanýmlamasý gibi görünen fakat deðiþken tanýmlamasý anlamýna gelmeyen, fonksiyon bildirimi
+				function prototype anlamýna geldiðini uygulayan terim. 
+				Ýkiye ayrýlýyor.
+					Function prototype ve Variable definition -> Eðer bir taným hem fonksiyon hem de function prototype anlamýna geliyor ise
+						function protype'ýn önceliði var. Ýleride öðrenilecek bunlar
+ - Value init : T x{} 
+	Bu þekilde tanýmlanan nesne hayata 0 deðeri ile geliyor. Ýlk basamaðý zero init.
+
+static int x3; // zero initalization
+int main(void){
+	int x1; // default init
+	int y1 = x1; // bu UB. Çöp deðeri kullanýyoruz
+
+	static int x2; // Zero initialization
+
+	int x4 = 10; // Copy initialization
+
+	int x5(22); // Direct initialization
+
+	int x6{77}; // Direct list initialization|| uniform/brace initialization
+
+	double dval1 = 4.5;
+	int x7(dval1); // Burada narrowing conversion için bir sentaks hatasý yok
+	int x8 = dval1; // Burada narrowing conversion için bir sentaks hatasý yok
+	int x9{dval1}; // Narrowing conversion, sentaks hatasý. 
+
+	// yukarýdaki definitionlarýn(narrowing conversion sentaks hatasý harici) hepsi doðru. Fakat aþaðýdaki,
+
+	int k(); // Bu yanlýþ. Geri dönüþ deðeri int olan, parametresi olmayan bir fonksiyon bildirimi bu. direct init deðil yani
+	k = 5; // sentaks hatasý, fonksiyonlar atama operatörünün sol operandý olamazlar.
+
+	int x10{}; // Value init, 0 deðeri ile hayata geldi.
+	int* p1{}; // nullptr ile hayata geldi
+	bool b1{}; // false
+
+	int arr[]{1, 2, 3, 4, 5}; // CPP de ok, C de yok bu özellik.
+}
+
+/--------------------------------------------------------------------------------------------------------------------------/
+NULL POINTER
+CPP'de object like macrolar ve define edilmiþ makrolar vs kullanýlmasý pek önerilmiyor. Yasak deðil fakat önerilmiyor.
+	C de null pointer için bir makro kullanýlýyor. NULL -> (void)0 anlamýnda. Burada null conversion var. Modern cpp öncesi
+		 bir pointer nesnesini null yapmak için 0 deðeri veriliyordu. Bu yönteminde önemli dezavantajlarý var. Function overloading gibi
+			konularda bu dezavantajlarý görücez. Modern cpp ile beraber nullptr denilen bir keyword eklendi.
+		nullptr_t nullptr; // nullptr'nin nullptr_t adlý bir türü var. Ve nullptr bu türden bir SABIT.
+		nullptr_t türünden herhangi bir pointer türüne örtülü dönüþüm var
+		int* p = nullptr;
+		double* p2 = nullptr;
+		int x = nullptr; // sentaks hatasý
+				
+
+Unevaluated Context: Ýþlem kodu üretilmeyen baðlam.	(C dilindeki sizeof'un operandý için iþlem kodu üretilmiyor mesela)
+	C de sadece sizeof da var iken CPP dilinde bir çok yerde var bu kod üretilmeme olayý. Ýleri de görülecek.
+	Ýþlem kodu üretilmediði içinde Undefined Behaviour olan durumlar UB oluþturmuyor. Mesela çöp deðer kullanýlmasý
+		int a[4] = { 0 };
+		int a[5] = 5; // bu normalde ub
+		sizeof(a[5]); // bu ub deðil çünkü iþlem kodu üretilmiyor
+/--------------------------------------------------------------------------------------------------------------------------/
+TYPE DEDUCTION
+	Derleyici koda bakarak kullanýlan türün ne olduðunu anlayabiliyor. (Ýleri de görülecek)
+	auto keywordü C dilindi otomatik ömürlü anlamýna gelirken CPP'de tür çýkarýmýnda kullanýlan araçlardan biri haline geldi.
+	auto x = 10; // x'in türü int olacak
+	auto y = 2.4; // double olacak
+
+
+	
+/--------------------------------------------------------------------------------------------------------------------------/
+/--------------------------------------------------------------------------------------------------------------------------/
+/--------------------------------------------------------------------------------------------------------------------------/
+/--------------------------------------------------------------------------------------------------------------------------/
+/--------------------------------------------------------------------------------------------------------------------------/
+/--------------------------------------------------------------------------------------------------------------------------/
+/--------------------------------------------------------------------------------------------------------------------------/
+/--------------------------------------------------------------------------------------------------------------------------/
