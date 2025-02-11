@@ -1,0 +1,436 @@
+Reference Semantics in C++
+Pointerlar gibi. Pointerlarý nerede nasýl kullanabiliyorsak
+	onun gibi kullanabileceðimiz referanslarý da var. CPP de çok yoðun kullanýlýyor referans semantiði.
+Neden referans semantiði?
+1- Pointerlara göre daha yüksek bir soyutlama sunuyor.
+2- Pointer semantiði ile kullanýlamayan bazý araçlar var. Operatör overloading gibi araçlarý
+	pointer semantiði ile kullanamýyoruz
+pointer ==> referans
+
+Kendileri pointer olmayan, ama pointer benzeri arayüz sunan, sýnýflar veri yapýlarý gibi yerlerde kullanýlan
+	pointer-like olarak adlandýrýlar bir araç var. Bunlara "smart pointer" deniyor. 
+	-uniqueptr 
+	-shareptr
+	Bu iki ptr türü smart pointera ait. Ýleride görülecek
+
+Diziler, listeler veya diðer veri yapýlarýndaki elemanlara eriþim saðlamak için kullanýlan
+	bir pointer türü gibi davranan yapýnýn adý "iterator"
+
+Modern CPP ile beraber referans kategorisi üçe ayrýldý.
+-L value reference
+-R value reference
+-Forwarding(universal) reference
+ 
+Expression(ifade): Sabitlerle, deðiþkenlerin kullanýlmasýyla veya birden fazla deðiþkenle yapýlan aritmetik(zorunlu deðil)
+	operatörlerle oluþturulan þeylere denir.
+	10		->		bu bir sabit ve ayný zamanda expression
+	x		->		ifade
+	x + y	->		ifade
+Ýfade ile deyimleri(statement) karýþtýrmamaka gerek. Statement olmasý için terminator olmalý sonunda(; -> terminator)
+	eðer bir ifadenin sonunda terminator var ise bu expression statement olur. x + y; -> expression statement
+
+Ýfadeler, kodun davranýþýný ve akýþýný belirleyen 2 faktör var.
+1- Ýfadenin türü
+	int main() 
+	{
+		int x = 10; // x ifadesinin türü int
+		char c = 'a'; // c ifadesinin türü char
+
+		x + 1.5; // burada side affect yok, ifadenin türü int olacka çünkü x'in türü int. Kodun davranýþýný belirledi
+					// x'in int olmasý
+		+c ;// integral promotion ile int olacak
+	}
+2- Value Category: C dilinde 2 adet deðer kategorisi var. L value veya R value.
+	CPP'de move semantics ve perfect forwarding ile beraber deðer kategorisi yetersiz kalmaya baþladý. Ýki adet
+		daha deðer kategorisi eklendi bunlar;
+	1-Primary Value Category: Bir ifadenin hangi deðer kategorisine ait olduðu dilin kurallarý tarafýndan
+		açýkça açýklanýr. Bir ifade sadece bir adet primary value categorye ait olabilir. Ayný anda 2 olamaz.(Hem L hem PR gibi)
+		-L value
+		-PR value -> Pure R value
+		-X value -> eXpiring value
+	2-Combiner Value Category: Bir ifade baþka bir deðer kategorisi de olabilir veya baþka bir deðer kategorisine ait olabilir.
+		L value		X value		-> GL value (yani bir ifade hem L olabilir hem de X value olabilir buna GL denir)
+		PR value	X value		-> R value
+
+Isimlerin oluþturduðu ifadeler					-> L value (int x = 10; // x value) 
+Aritmetik operatörlerin oluþturduðu ifadeler	-> PR value
+
+C dilinde;
+	-Ýsmin baþýna gelen ++ veya --(prefix increment/decrement) operatörlerinin operandlarý L value olamaz.
+		++x = 40; // sentaks hatasý
+		--y = 33; // sentaks hatasý
+	-Virgül operatörünün operanlarýnýn ikisi de L value olsa dahi L value olarak kullanýlamaz.
+		x, y = 40; // sentaks hatasý!
+
+
+CPP dilinde;
+	-Prefix increment/decrement operatörü ile oluþturulan ifadeler L value olabilir(postfix olmaz)
+		&++x; // bu legal çünkü ++x bi lvalue
+	-Virgül operatörünün saðýndaki operandý eðer L value ise L value olarak kullanýlabilir.
+		40, y = 30; // legal
+	-Ternary operatörü ile oluþturulan ifadeler duruma göre L value olabilir.
+		#include <iostream>
+		int main() 
+		{
+			int x = 40;
+			int y = 20;
+
+			(x > y ? x : y) = 5; // parantez içinde olmasý gerek yoksa operatör önceliðinden dolayý x > y ? x : (y = 5);
+									// þeklinde olur. Ternary operatörünün önceliði assign operatöründen düþük
+		}
+
+/------------------------------------------------------------------------------------------------------------------------/
+/------------------------------------------------------------------------------------------------------------------------/
+/------------------------------------------------------------------------------------------------------------------------/
+															L VALUE REFERENCE
+	Bir referans oluþturulurken referans oluþturulacak nesnenin türüne uygun oluþturulmalý.
+	T& idf = idf(T türünden); 
+- Bunlar pointer yerine kullanýlýyor. Fakat kullanýmlarý ve görünümleri farklý.
+	Pointerlar asterisk atomu kullanýrken referanslar & ampersand operatörünü kullanýyor.
+int main() 
+{
+	int x = 40;
+	int* ptr = &x; // x'in adresini tutan bir pointer
+	*ptr = 33; // x'e 33 deðerini atýyor.
+	/////////////
+	int& r = x; // r x'e bind edildi. referansý bir alias olarak düþünebiliriz. Ýlk deðer atamasýndan sonra artýk r demek x demek
+	r = 44; // x'in deðeri 44 oldu
+}
+
+Bir kaç önemli kural var referans semantiði için;
+1- Rebind edilemiyor. Yani referans nesnesinin gösterdiði nesneyi deðiþtiremiyoruz.
+	Pointerlardaki int* const x(top-level const) ifadelerine benzetebiliriz. Scopeunun dýþýna kadar ayný nesneyi gösterecek.
+int main() 
+{
+	int x = 40;
+	int y = 55;
+	int& r = x;
+	r = y; // burada r artýk y'nin referansý oldu gibi bir anlamý yok. x'in deðeri y'nin tuttuðu deðer yani x = 55 oldu.
+				// neye bind edildi ise scope sonuna kadar o nesneyi gösterecek.
+}
+
+2- Default init yapýlamýyorlar
+int main() 
+{
+	int* ptr; // pointer semantiði için bu ok mesela
+	int& ref; // default init ref için sentaks hatasý
+}
+
+3- Eðer lvalue referans oluþturmak istiyor isek ilk deðer verdiðimiz ifadenin de lvalue olmasý gerek.
+int main() 
+{
+	int x = 40;
+	int& r = x; // bu ok
+	int& r2 = x + 5; // aritmetik operatörlerinin oluþturduðu ifade R(PR) value
+}
+
+4- Referansý initialize eder iken kullanýlan init yönteminin önemi yok. Default init olmadýðý sürece, direct init, direct list init
+	copy init gibi ilk deðer verme yöntemleri kullanýlabilir.
+5- Bir referansýn baþýna addresof operatörü getirilir ise elde edilen deðer baðlanan nesnenin adresi olacak.
+int main() 
+{
+	int x = 40;
+	int& r(x); // bu ok
+	&r; // x'in adresi
+}
+6- Pointerlarda olan pointer to pointer gibi reference to refence diye doðrudan bir yapý yok.
+ 
+7- Bir pointer içinde referans oluþturulabilir. Oluþturulan pointerin türü ile ayný olmalý.
+int main() 
+{
+	int x = 40;
+	int y{55};
+	int* ptr = &x;
+
+	int*& r = ptr; // ptr'nin türü int*.
+	++*r; // x'in deðeri 41 oluyor.
+	std::cout << x <<endl;
+
+	r = &y; // burada ptrye y'nin adresi veriliyor. 
+	*r = 12412; // y'nin yeni deðeri
+}
+
+8- Farklý türden referanslar arasýnda dönüþüm yok. 
+int main(void){
+	int x = 10;
+	char& cr = x; // sentaks hatasý
+}
+
+
+Referans semantiði ile oluþturulmuþ ifadenin assembly kodu, neredeyse her zaman, pointer ifadesi
+	için oluþturulan kod ile ayný. Bundan dolayý kapladýklarý alan oluþturulan koda baðlý. 
+		Eðer pointer ile ayný ise pointer türü kadar yer, bazý durumlarda oluþturulan kod farklý olacaðýndan dolayý
+			oluþturulan koda baðlý. Özet ile kullandýðý alan 'it depends'
+
+
+
+/------------------------------------------------------------------------------------------------------------------------/
+															Call by Value(accesor) - Call by Reference(mutator)
+	Eðer bir nesnenin deðeri parametreye gönderilirse o nesnenin deðeri fonksiyon içinde deðiþtirilemez.
+	Eðer adresi gönderilirse dereference edilerek gönderilen nesnenin deðeri deðiþebilir. Parametre pointer olmalý
+
+void func(int x); // bu call by reference x = 999; yapsak bile gönderilen nesnenin deðeri deðimþeyecek.
+void func(int* x); // *x = 555; yapýldýðýnda gönderilen nesnenin deðeri 555 olacak.
+
+CPP dilinde ise L Reference semantiði bu arayüzü daha kolay hale getiriyor.
+void func(int& x){
+	x = 44; // fonksiyona gönderilen nesnenin ndeðeri artýk 44 oldu. 
+}
+Burada oluþturulan kod/maliyet pointer semantiði ile ayný. Buradaki olay dil seviyesinde
+	kullanýlan bir araç.
+/------------------------------------------------------------------------------------------------------------------------/
+															Functions Returning Pointers / References
+	Fonksiyonlar adres döndürebilir. Bu fonksiyonlarý deðer atama veya döndürdüðü adresdeki deðeri deðiþtirmek için
+		kullanabiliyoruz.
+
+	int g = 44;
+	int* foo(void){
+		// code
+		return &g;
+	}// global deðiþkenin adresini döndürüyor
+	int main(){
+		*foo() = 44; // g'nin deðeri 44 oldu
+		int* ptr = foo(); // ptr g'nin adresini tutuyor.
+	}
+
+Adres döndüren pointerlar gibi olan referanslarda var. Tabii bunlar adres döndürmüyor. Döndürülen deðer L value reference
+	Bu L value reference'ýn en çok kullanýldýðý yerlerden birisi.
+int g = 44;
+int& foo() {
+
+	return g;
+}
+int main()
+{
+	foo() = 876; // legal g'nin deðeri 876 olur.
+	int& r = foo(); // r, g nesnesinin referansý oldu.
+}
+
+1- Bir fonksiyonun parametre deðiþkenin l value reference olmasý. (mutator parametre/set function/setter)
+	void foo(T& x);
+2- Bir fonksiyonun geri dönüþ deðerinin l value reference olmasý. 
+	T& bar();
+/------------------------------------------------------------------------------------------------------------------------/
+															Diziye Pointer ve Referans
+// C dili için -> öyle bir pointer deðiþken tanýmlayýn ki o pointer derefence edildiðinde dizinin kendisine eriþmiþ olalým.
+
+int main(void){
+	int a[5] = {1, 2, 3, 4, 5};
+	int* ptr = a; // burada array decay var. ptr'nin deðeri a dizisinin ilk elemanýnýn adresi. Ýstenileni karþýlamýyor.
+
+	int (*p)[5] = &a; // 5 elemanlý bir dizinin adresinin tutulmasýný saðlayan pointer. 
+						// derefence edilirse a'nýn ilk elemanýnýn adresine eriþir(array decayden dolayý)
+
+	*ptr; // deðeri int
+	*p; // deðeri p[5]; Yani int*
+	**p; // deðeri int
+}
+
+Bunun referans ile yapýlmýþ hali, pointer semantiðinden ayrý olarak asterisk yerine ampersand
+	addressof olmadan array ismi yazýlýr.
+// CPP
+int main(){
+	int a[5] = {1, 2, 3, 4, 5};
+	int (&r)[5] = a; // bu þekilde.
+}
+/------------------------------------------------------------------------------------------------------------------------/
+															Const Correctness (const doðruluðu)
+	Const olmasý gereken her þey const olmalý.
+	Bir cpp kodunun kalitesini gösteren en önemli etkenlerden.
+
+Neden?
+1- Bir fonksiyonun parametresi const olmasý gerekirken deðil ise, fonksiyonu inceleyen kiþiler
+	o fonksiyonun bir accessor fonksiyon deðil, kendisine gönderilen nesneyi deðiþtiren bir mutator fonksiyon olduðunu düþünür.
+		Bu bir sentaks hatasý deðil fakat bir semantik hata. Okuyucuyu yanýltýyor
+void print_array(int* p, size_t sz); // Bu fonksiyonda const olmadýðý için dýþarýdan bakan kiþi, diziyi yazdýrýrken
+										// dizi üzerinde deðiþiklik yaptýðýný düþünür.
+2- Const keywordünün kullanýlmasý ile derleyici o nesnenin deðerinin deðiþmeyeceðini bildiði için
+	daha optimize edilmiþ kod üretebilir.(garanti deðil ama ihtimali daha yüksek)
+3- Const keywordünün yanlýþ ya da hiç kullanýlmamasý ile bir fonksiyonun yapacaðý iþlemler daraltýlabilir.
+	print_array fonksiyonu için eðer kendisine const int[5]; dizisi gönderilirse const int* türünden int* türüne
+		conversion olmadýðý için çalýþmaz. 
+
+Bazý programlama dillerinde tanýmlanan deðiþkenler hayata immutable(deðeri deðiþtirelemez) olarak geliyor.
+	CPP'de ise mutable olarak. 
+
+Hoca CPP diline yeni baþlayanlara;
+	-Deðiþkenleri default olarak const olarak baþlat.
+	-Eðer ileride sentaks hatasý alýrsan const keywordünü sil çünkü senin deðiþkenin aslýnda mutable olmasý gerekiyormuþ.
+
+
+Const Reference: 
+L value referanslar zaten const reference to int olarka hayata baþlýyor. Yani
+	int& const r = idf; Þeklinde hayata geliyorlar. r identifierýndan önce kullanýlan const keywordü burada redundant(gereksiz)
+		const'un orada olmasý ile olmamasý arasýnda bir fark yok. Fakat, const keywordü ampersandtan önce kullanýlýrsa
+			ayný const int* const p; gibi oluyor.
+	Ýki þekilde de kullanýlabilir. Ýkisi de ayný anlamda
+	- const int& r
+	- int const& r
+
+	Bu þekilde tanýmlanan l value referanslarýna deðer atamasý yapýlamaz. Yani sadece read-only olarak eriþilebilirler.
+		int x = 10;
+		int y{};
+		const int& r = x;
+		y = r; // bu ok
+		r = 44; // bu sentaks hatasý
+	r burada bir immutable reference.
+
+int& foo(void); // buradan döndürülen nesnenin referansý ile o nesne üzerinde deðiþiklik yapýlabilir
+const int& foo(void); // buradan döndürülen nesnenin referansý ile o nesne üzerinde deðiþiklik yapýlamaz
+
+Normalde bir ifadeye l value referans oluþturulabilmesi için o ifadeninde l value yani
+	bellekte bir alana sahip olmasý gerekiyor. Fakat const L value için bazý istisnalar var.
+
+	1-const L value referansa bir R value expression ile deðer verilmesi sentaks hatasý deðil.
+		Derleyici tarafýndan r value expression için geçici bir nesne oluþturuluyor ve oluþturulan
+			o nesnenin referansýna baðlanýyor.
+	int main(void){
+		int& r = 20; // sentaks hatasý, 20 burada sabit bir ifade yani memoryde bir alana sahip deðil.
+
+		const int& ref = 20;
+		// derleyici oluþturduðu geçici bir deðiþken ile bu kodu legal yapýyor.
+
+		/* PSUEDO CODE
+			int temp = 20;
+			const int& ref = temp;
+			//Tabii oluþturulan kodda nesnenin adý temp vs deðil. Anlatým için böyle yazdým
+		*/
+	}
+
+	2-Farklý türler arasýnda l value reference kullanýlabiliyor. Üstteki ile ayný. Geçici nesne aracýlýðý ile yapýlýyor.
+		Burada kullanýlan türlere baðlý olarak veri kaybý olabilir.
+	int main(void){
+		double dval = 20.24;
+		int* r = dval; // bu sentaks hatasý çünkü dval'in türü double iken r'nin türü int.
+
+		const int& ref = dval;
+		// derleyici oluþturduðu geçici bir deðiþken ile bu kodu legal yapýyor.
+		/* PSUEDO CODE
+			const int temp = dval; // deðer 20.24 deðil 20 olacak. Veri kaybý var hala
+			const int& ref = temp;
+			
+		*/
+	}
+
+Burasý önemli bence
+Fonksiyonlar içinde durum ayný.
+	void foo(int& r); // bu bir mutator fonksiyon ve sadece L value reference alýyor.
+	void baz(const int& r); // bu bir accessor fonksiyon. Burada ise yukarýdaki bilgilerden dolayý parametre deðiþkeni
+								// hem L value hem de R value alabiliyor.
+	int main(void){
+		int x = 10;
+		int& ref = x;
+		foo(ref); // bu legal
+		foo(ref + 5); // bu sentaks hatasý çünkü rvalue expr
+
+		baz(ref); // bu legal
+		baz(ref + 5); // bu da legal çünkü derleyici geçici bir nesneye ref oluþturacak.
+	}
+
+	 
+Fonksiyonlarýn geri dönüþ deðerlerinde const olmasý anlamý deðiþtiriyor.
+	-const ref döndürülüyor ise sadece deðer okumasý yapýlýr.
+	-ref döndürülüyor ise hem okuma hem yazma.
+/------------------------------------------------------------------------------------------------------------------------/
+															Pointer Semantiði vs Referans Semantiði
+1-Dizinin elemanlarý pointer to int olan bir dizi olabilir. Fakat, elemanlarý referans olan bir dizi olamaz.
+	int main()
+	{
+		int x = 10, y = 20, z = 30;
+		int* p[3] = { &x, &y, &z }; // bu var
+
+		int& r[3] = { &x, &y, &z }; // bu sentaks hatasý
+	}	
+
+2-Pointer deðiþkenine baþka bir nesnenin adresi atanabilir, deðerleri deðiþtirilebilir. Referansýn gösterdiði nesne deðiþtirilemez.
+	int main()
+	{
+		int x = 10;
+		int y = 20;
+		int* p = &x; 
+		p = &y; // baþka bir nesnenin adresini tutuyor artýk
+
+		int& r = x; 
+		r = y; // bu sentaks hatasý, referanslar rebindable deðil.
+	}
+
+3-Pointer deðiþkenler default init edilebilir. Referans deðiþkenleri default init edilemez.
+	int main()
+	{
+		int* p; // default init yapýlabilir
+		int& r; // bu sentaks hatasý
+	}
+
+4-Pointer semantiðinde pointer to pointer kullanýlabilir. Referanslarda reference to reference gibi bir özellik yok.
+	int main()
+	{
+		int x = 10, y = 20, z = 30;
+		int* p = &x;
+		int** ptr = &p; // pointer to pointer to int
+		*ptr = &y; // p artýk y'nin adresini tutuyor.
+		**ptr = 44; // y'nin deðeri 44 oldu
+
+		int& r1 = x;
+		int&& rtr = r1; // bu sentaks hatasý reference to reference yok.
+		int& r2 = r1; // bu legal. 
+	}
+	Ýleride generic programlama kýsmýnda bazý durumlarda reference to reference olayý karþýmýza gelecek.
+		Bunun için reference collapsing adý verilen özel bir kural seti devreye giriyor. Ýleride görülecek.
+
+5-Hiçbir nesnenin adresi olmayan bir pointer olabilir(nullptr), referanslarda böyle bir özel durum yok.
+6-void* türü var fakat void& türü yok.
+
+/------------------------------------------------------------------------------------------------------------------------/
+															R VALUE REFERENCE - GÝRÝÞ
+R Value Reference alttaki iki aracýn kullanýmý için oluþturulmuþ(baðlayýcý olarak kullanýlýyor):
+	-Taþýma/Move Semantics 
+	-Mükemmel gönderim / Perfect forwarding
+
+R value referenceta iki adet ampersand tokený kullanýlýyor.
+	int &&r1 -> r value reference
+	int &r2 -> l value reference
+R value reference sadece R value expression'a baðlanabiliyor. Ayný L value ref'in L value expr'a baðlanabilmesi gibi.
+	int main(void){
+		int x = 6;
+		int& r1 = x; // l value ref l value expressiona baðlandý.
+		int&& r2 = 5; // r value ref r value expressiona baðlandý
+		int&& r3 = r1; // sentaks hatasý.
+	}
+
+	3 adet referans biçimi var.
+		1- T& r1 = L value expressions
+		2- const T& r2 = L ve R value expressions
+		3- T&& r3 = R value expressionlara baðlanýr sadece.
+
+R Value Reference ileride move semantics ve Perfect Forwarding kýsmýnda detaylý anlatýlacak. O zamana kadar bunlar yeterli.
+/------------------------------------------------------------------------------------------------------------------------/
+MÜLAKATLARDA HOCA BU SORUYU ÇOK SORUYORMUÞ
+	SORU: Aþaðýdaki kod çalýþtýrýldýðýnda ekrana yazdýrýlacak x'in deðeri ne olur?
+// c kodu;
+int main(){
+	int x = 5;
+	foo(x); // foo bir fonksiyon
+	printf("%d", x);
+}
+	CEVAP: Burada x nesnesi foo fonksiyonuna call by value ile gönderildiði için
+		foo içerisinde nasýl bir iþlem yapýlýrsa yapýlsýn x'in deðeri 5 olacak ve ekrana 5 yazdýrýlacak.
+			Eðer "foo'nun kodunu görmek gerek" derseniz 3152 kapýdan dýþarý.
+	Bu durum C için geçerli CPP için ise cevap "foo kodunu görmem gerek" Bunun sebebi
+		fonksiyon l value referans semantiði olarak kodlandý ise x'in deðeri deðiþir, eðer call by value ise
+			deðiþmez.
+
+int foo(int a){
+	a = 4;
+} // eðer foo böyle tanýmlandý ise bu call bu value, x deðeri deðiþmez.
+
+int foo(int& a){
+	a = 4;
+}// foo fonksiyonu l value referans semantiði ile tanýmlanmýþ x'in deðeri deðiþir.
+Özetle: 
+	C kodu için: Call by value olduðu için deðer deðiþmez.
+	CPP kodu için: Fonksiyonun tanýmý gerekli. 
+/------------------------------------------------------------------------------------------------------------------------/
+
+
+
+
