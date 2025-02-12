@@ -1,0 +1,64 @@
+#include <iostream>
+int& get_value() {
+	std::cout << "Enter an integer: ";
+	int x;
+	std::cin >> x;
+
+	
+	return x;
+}
+
+int main(void) {
+	int& r1 = get_value();
+	std::cout << "r1 value = " << r1 << '\n';
+}
+Pointerlarda otomatik ömürlü nesnelerin adresinin döndürülmesine dangling pointer deniyor ve UB.
+Fonksiyon içinde oluþturulan x nesnesi otomatik ömürlü bir nesne ve block scope dýþýnda çýktýðýnda 
+	ömrü sona eriyor. Bunun referansýný döndürmek UB. Çöp deðer döndürüyoruz ve kullanýlmasý UB
+/------------------------------------------------------------------------------------------------------------------------/
+															DEFAULT ARGUMENT
+C dilinde olmayan CPP dilinde olan bir özellik. 
+Belirli, ya da bütün, parametreler için önceden belirlenmiþ bir deðer veriliyor.
+	Ve bu deðer sadece eðer o parametre deðiþkenine argüman yollanmadýysa kullanýlýyor.
+	Yani 4 parametreli bir fonksiyonun son iki parametresine argüman yollanmadýðýnda eðer önceden belirlenmiþ(default argument)
+		bir deðerleri var ise o deðer(ler)i kullanýyor.
+
+Neden?
+	Bazý fonksiyonlarýn belirli parametreleri hep belirli deðerler kullanýlarak çaðrýlýyor.
+	a-Fonksiyonu çaðýran her seferinde o sabit deðeri olan deðerleri yazmasý gerek.
+	b-Nerede zahmet orada eziyet. Nerede zahmet orada hata riski
+		Yani gönderilmesi gereken deðerler yerine baþka deðer yazýlabilir. Bu da istenmeyen hatalara sebep olur
+
+1-Verilen varsayýlan argümanýn sabit olma zorunluluðu yok. Yani bir global deðiþkenin deðerini de verebiliriz oraya.
+	int foo(int, int, int); -> bir fonksiyon bildirimi
+	int bar(int, int, int = 5); -> 3. parametre deðiþkenine bir deðer gönderilmez ise varsayýlan deðeri 5 olacak.
+	int foo(int, int, int = idf); -> 3. parametre deðiþkeni bir nesne
+		Burada parametrelerin isimleri yok. Parametrelerin isimlerinin olmasý veya olmamasý bir fark oluþturmuyor.
+	int foo(int x, int y, int z = idf); -> Hiçbir fark yok
+
+2-Default argument fonksiyonlarýn tanýmýnda deðil bildiriminde(function prototype) yer alýr.
+	// Örnek -> default deðiþken olarak 10 kullanýlýyor. Parametre deðiþkeni yollamaz ise 15 döndürüyor.
+	 #include <iostream>
+	int& get_value(int x = 10); // fonksiyon bildiriminde default argument kullandýk.
+	int main(void) {
+		int x{};
+		int& r1 = get_value();
+		std::cout << "r1 value = " << r1 << '\n';
+	}
+	int& get_value(int x) {
+		static int xparam = x + 5;
+		return xparam;
+	}
+
+3-Bir fonksiyonda default argument kullanýlmýþ ise, kullanýlan parametrenin saðýnda kalan tüm parametrelerde de
+	default argument kullanýlmasý zorunlu. Kullanýlmaz ise sentaks hatasý.
+	int foo(int, int = 10, int); // sentaks hatasý, 3. parametrenin default deðeri yok
+		Derleyicinin verdiði hata -> 'foo': 3 parametresinin varsayýlan baðýmsýz deðiþkeni eksik	
+	int foo(int, int = 10, int = 0); // sýkýntý yok
+
+
+
+
+/------------------------------------------------------------------------------------------------------------------------/
+
+/------------------------------------------------------------------------------------------------------------------------/
