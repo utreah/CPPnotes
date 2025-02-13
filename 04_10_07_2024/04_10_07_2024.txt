@@ -1,3 +1,4 @@
+idf = identifier(deðiþekn isimlerinde örnekler de kullanýyorum idf) 
 #include <iostream>
 int& get_value() {
 	std::cout << "Enter an integer: ";
@@ -218,6 +219,9 @@ auto keywordü için 3 farklý kural seti var:
 -auto &&x = expr;
 	Bu üç definition içinde yapýlan type deduction büyük ölçüde ayný fakat önemli farklýlýklar var.
 -------------------------------------------------
+-------------------------------------------------
+-------------------------------------------------
+-------------------------------------------------
 /*	auto x = expr;	*/
 1-initializer expression(ilk deðer veren ifade) const bir deðiþkenin oluþturduðu ifade ise
 	const düþüyor.
@@ -239,13 +243,331 @@ int main(void)
 }
 
 
-1:15
+3-Hem const hem T& olursa iki kural birleþiyor. const düþüyor, ifade ref olamayacaðý için T oluyor.
+int x = 132;
+const int& r = x;
+auto y = x; // y'nin türü int
+
+4-Eðer autoya Initializer expression olarak bir dizi verilir ise T* olur. Bunun sebebi array decay
+int a[5]{};
+auto x = ar; // burada ar array decaya uðrayacak
+//auto x = &ar[0]; -> array decay sonrasý böyle gözükecek. Bundan dolayý x'in veri türü int* (T*)
+
+5-Eðer dizi CONST ise burada const DÜÞMÜYOR. ve auto const int* oluyor. Bunun sebebi low-level const olmasý
+const int a[5]{};
+auto x = ar; // x'in türü const int* fakat buradaki const yukarýda 'düþen' const ile ayný deðil
+				bu low level const. Yani burada const olan ifade x deðil, x'in gösterdiði adresteki dizinin
+					deðerini koruyor. Yani const x deðiþkenine ait deðil.
+6-Initializer expression bir string literali ise, CPP'de yazýlar const char dizisi þeklinde tutulduðu için
+	auto burada const char* olacak(gene array decay ve low level const)
+auto x = "Kaveh"; // kaveh burada const char[6] türünde array decayden dolayý x const char* oluyor.
+
+7-Bir autoya Initializer expression olarak bir fonksiyonun adý(function call operatörü olmadan) yazýlýrsa Function to pointer conversion
+	(array decay gibi düþün) oluyor ve autonun türü o fonksiyon pointerý oluyor.
+int foo(int, int);
+int main(void){
+	auto x = foo; // burada foo aslýnda &foo þeklinde yazýlmýþ gibi okunuyor derleyici tarafýndan bundan dolayý
+					// x'in veri türü geri_dönüþ_deðeri (*)(param1, param2) yani
+					// int (*)(int, int); x'in veri türü(fonksiyon pointerý)
+}
+-------------------------------------------------
+-------------------------------------------------
+-------------------------------------------------
+-------------------------------------------------
+/*	auto& r = expr;	*/
+
+1- Atama operatörünün sað operandý L value reference olmalý. Eðer olmaz ise sentaks hatasý alýrýz.
+int main(void){
+	int x = 10;
+	auto &r = x; // -> x int olduðu için bu int& r yazmak gibi
+	auto &r = 10; // -> sentaks hatasý çünkü 10 bir sabit(int) ama L value refence deðil bir R value expression
+}
+
+2- Eðer Initializer expression bir const ifade ise burada const düþmüyor.
+int main(void){
+	const int x = 10;
+	auto &r = x; // -> const düþmediði için auto burada const int olacak. 
+	// Eðer const düþmüþ olsaydý auto x; kýsmýnda olduðu gibi, const int olan bir nesneye, int türünden bir referans vermiþ olacaktýk ki
+		// const nesnelerin deðerinin deðiþtirilmesi CPP'de sentaks hatasý. Bundan dolayý const düþmüyor.
+}
+
+3- Referans deklaratörü var ise array decay uygulanmaz. string literalleri de dahil buna
+int main(void){
+	int ar[5]{1, 2, 3, 4, 5};
+	auto &r = ar; // array decay uygulanmýyor. ar ifadesinin türü int[5]; Bu durumda autonun türü de int(&r)[5] olacak.
+	
+	int(&rr)[5] = ar; // bu taným ile auto &r'nin veri türleri ayný.
+
+	auto& y = "oguz";
+	// const char(&y)[5] = "oguz";
+
+	// bu kural autonun kullanýmýnýn kolaylýðý adýna çok güzel bir örnek. Pointer to an array gibi
+		// uzun uzun yazmak yerine auto keywordü ile define ederek bu karýþýk görünümden kurtuluyoruz. 
+			// (function pointersa typedef yapmak gibi)
+}
+3+2)- Referans deklaratörü var ise, dizilerde const keywordü düþmez.
+		Bu 2. ve 3. kuralýn birleþimi. const int ar[5] ise auto da const int(&r)[5] olacak.
+
+4- Fonksiyon ismiyle Ýlk deðer verildiðinde de function to pointer conversion olmayacak.
+
+int foo(int); // bu fonksiyonun türü int(int); fonksiyon pointer ile fonksiyonun türü ayný þey deðil
+//int(int) -> foo'nun türü
+//int(*)(int) -> foo'nun adresini tutacak türden bir deðiþen bu türden olmalý
+int main(void){
+	auto& x = foo; // function to pointer conversion yok ve foo'nün türü int(int)
+	// Peki nasýl yazýyoruz bu türü? Çok basit int (&idf)(int); Function pointer gibi duruyor ama buna
+		// function reference deniyor. Ve biz burada fonksiyonun adresini deðil fonksiyona referans veriyoruz. Yani x(idf) foo gibi oluyor
+
+	int (&rf)(int) = foo; // auto& x = foo; bu iki ifade de birbirinin aynýsý.
+	rf(45);
+	x(44);
+}
 
 
+
+Faydalarý:
+1- CPPnin türleri C diline göre aþþþþþýrý karmaþýk. auto type deduction bu karmaþýklýðý geçmemizi saðlýyor.
+	Diyelmi ki bir fonksiyonun geri dönüþ deðeri bir deðiþkende tutulacak fakat deðiþkenin türünü yanlýþ yazdýk.
+	Eðer fonksiyonun geri dönüþ türü ile deðiþkenin türü arasýnda örtülü dönüþüm var ise baþýmýz çok fena belada. 
+	yok ise en fazla sentaks hatasý ama auto keywordünün kullanýlmasý çok kolaylaþtýrýyor bu iþi sentaks hatasý yanlýþ yazma riski yok.
+
+pair<vector<int>::iterator, vector<int>::iterator> x = foo(); Burada x'in solundaki kýsým bir tür. 
+	Bu yazýlýrken yanlýþ olabilir. auto kullanmak bunu yazma derdinden kurtarýyor.
+auto x = foo(); ikisi de ayný
+
+2- Fonksiyonun bildiriminde(ve tanýmýnda) geri dönüþ türü deðiþtirildiðinde auto keywordü ile tanýmlanmýþ
+	o fonksiyonun geri dönüþ deðerini tutan deðiþkenlerin veri türünü deðiþtirmeye gerek olmayacak.
+	(C kursunda dynamic memory implementasyonunda typedef kullanmýþtýk onun mantýkla ayný)
+
+auto ayný zamanda okuyucuyu yanýltabiliyor. Bu ileride örnekleri ile görülecek.
+-------------------------------------------------
+-------------------------------------------------
+-------------------------------------------------
+-------------------------------------------------
+/*	auto&& fr = expr;	*/ forwarding reference
+
+auto keywordü type deduction ile kullanýlýrsa buna forwarding/universal reference deniyor.
+Her türlü ifade ile deðer verebiliyoruz. Value kategorisi, niteleyicileri(static const vs) farklý olmasý önemli deðil.
+
+int& lr -> bunun ilk deðeri L value olmak zorunda
+int&& rr -> ilk deðeri R value olmalý
+auto&& a -> bu ise her þeyi alýyor. L, R, const, static fark etmeksizin her þeyi ilk deðer olarak alabiliyor.
+				Bundan dolayý universal reference deniyor.
+Ýlk deðerden sonra dilin kurallarýna uyarak auto için ya L value ya da R value referans türü olacak.
+
+
+Kurallarý;
+	Deðiþken Ýçin:
+1- Eðer initializer L value ise, sol taraf referans olacak.
+int x = 10;
+auto&& r = x; -> r burada L value reference -> int& r = x;
+
+2- Eðer initializer R value ise, sað taraf referans olacak.
+int&& r2 = x + 3; // r2 R value ref olacak -> int&& r2 = x + 3;
+
+Bu bahsettiklerimiz r ve r2 için elde edilen türler. auto için durum farklý
+	
+auto için yapýlan çýkarým;
+1- Eðer initializer l value ref ise --> T&
+2- Eðer initializer r value ref ise --> T
+
+Yani eðer L value ref ise, auto için çýkarým yapýlan tür o türden referans
+	R value ise o tür oluyor.
+
+int x = 10;
+auto&& r1 = x; // burada r1 sol taraf referans, autonun türü int&
+auto&& r2 = x + 3; // r2 R value ref, autonun türü int
+auto&& r3 = 10; // r3 R value ref, autonun türü int
+
+Þöyle bir problem var. r1 sol taraf ref, auto int ref yani aslýnda burada reference to reference var.
+	Daha önce referans to referans olmadýðýný söylemiþtik. Bazý durumlarda böyle bir durum ortaya çýkabiliyor.
+	Bu durumda derleyici "reference collapsing" denilen bir kuralý uyguluyor.
+
+reference collapsing
+=============================
+Reference			Reference		Output
+T&					&				T&		(L value referansýna L value referansý olursa sonuç L value ref olacak) auto&& r1 = x; buna örnek
+T&					&&				T&		(L value referansýna R value referansý olursa sonuç L value ref olacak)
+T&&					&				T&		(R value referansýna L value referansý olursa sonuç L value ref olacak)
+T&&					&&				T&&		(R value referansýna R value referansý olursa sonuç R value ref olacak)
+
+int x = 10;
+auto&& y1 = x; // burada auto için yapýlacak çýkarým int& olacak ve þöyle gözükecek.
+int& &&y1 = x; // reference collapsingten dolayý sol refe R value ref olduðundan sonuç int& olacak
+
+auto&& y2 = x + 10; // Initializer r value olduðu için auto için yapýaln çýkarým int olacak
+int &&y2 = x + 10; // int bir tür ve y2 r value bundan dolayý R value ref olacak. int refref yani.
+
+DÝKKAT!!!
+
+auto&& y3 = ++x; // auto burada int&, bunun sebebi ++x'in(ve --x) CPP'de L value ref olarak kabul edilmesi.
+
+int* p = &x;
+auto& r = p; ==> int* r = p; auto için yapýlan çýkarým int*
+-------------------------------------------------
+-------------------------------------------------
+-------------------------------------------------
+-------------------------------------------------
+/*	decltype	*/
+
+decltype kullanmak için bir deðiþken gerekmiyor.
+bir type yazabildiðiniz her yerde, decltype ile çýkarýmý yapýlan türü kullanabiliriz.
+
+Kullanýmý ==> keyword(expression) bu þekilde oluþturulan ifadeler deðiþken deðil bir tür.
+ 
+int main(void){
+	// bunlarýn hepsi bir tür, deðiþken deðil
+	decltype(10); 
+	decltype(x);
+	decltype(x + 5);
+	decltype(x.y);
+}
+decltype'ýn 2 adet kural seti var.
+1- decltype içindeki ifade identifier(isim) isim olmasý durumunda
+	decltype(x);
+	decltype(y);
+	decltype(st.day);
+	decltype(st->day); // member selection operatörleri olan dot ve arrow dahil
+	
+	idf olmasý durumunda o isim hangi türden bildirilmiþ ise o türden olur. 
+
+2- isim deðil ise farklý kural setleri var.
+	decltype(10);
+	decltype(x + 10);
+Özel bir duruma sahip.
+	decltype(x) -> burada x bir idf olduðu için ilk kural setine dahil iken
+	decltype((x)) -> burada x bir ifade olduðu için ikinci kural setinde
+	Bunun kurallarý biraz daha karmaþýk. Elde edilen tür, ifadenin primary deðer kategorisine baðlý.
+	L - PR - X value
+
+	decltype(expression)
+Value category of the expression
+Category		expression		Output
+PR				T				T		-> eðer expression PR value ise output T(int ise int)
+L				T				T&		-> L value category ise output T&(int ise int&)
+X				T				T&&		-> X value category ise output T&&(int ise int&&)
+
+
+Ýlk kuralýn örnekleri;
+
+int global_var{};
+decltype(global_var) foo(decltype(global_var)* p); bu bir fonksiyon bildirimi ve global_var'ýn türü int olduðu için
+int foo(int* p); -> aslýnda görünüþü bu þekilde
+
+struct Nec{
+	int x;
+	double* p;
+};
+int main(void){
+	int x{};
+	decltype(x); -> elde edilen tür int çünkü x int türünden tanýmlanmýþ
+
+
+		int global_var{};
+		decltype(global_var) foo(decltype(global_var)* p); bu bir fonksiyon bildirimi ve global_var'ýn türü int olduðu için
+		int foo(int* p); -> aslýnda görünüþü bu þekilde
+
+	int* p = &x;
+	decltype(p); -> int*
+
+	const int y{435};
+	decltype(y); -> const int
+	decltype(y) cival; // bu sentaks hatasý çünkü decltype(y) const int ve const deðiþkenlere default init yapýlamaz.
+	
+	int& r = y;
+	decltype(r); -> int&
+	decltype(r) a; -> sentaks hatasý, T& türü default init edilemez.
+
+	const int& cr = y;
+	decltype(cr); -> const int&
+
+	int&& x2 = 444;
+	decltype(x2); -> int&&
+
+	int x3[30]{};
+	decltype(x3); -> int[30]
+	decltype(x3) ar; -> int ar[30]
+
+	Nec mynec;
+	decltype(mynec.p); -> double*
+	Nec* necptr = &mynec;
+	decltype(necptr->p); -> double*
+}
+
+Ýkinci kuralýn örnekleri;
+
+int main(void){
+	decltype(4); // PR value yani int elde edilir
+
+	int x1 = 56;
+	decltype(+x1); // PR value yani int elde edilir
+
+	decltype(x1++); // PR value yani int elde edilir
+
+	decltype(++x1); // L value yani int& elde edilir
+	decltype(++x1) y; // sentaks hatasý decltype L value reference, L val refler default init edilemez.
+	
+	int x2 = 44;
+	int* ptr = &x2;
+	decltype(*ptr); L value yani int&
+
+	 int a1[5]{};
+	 decltype(a1[3]); L value yani int&
+
+
+}
+
+int foo();
+int& bar();
+int&& baz();
+
+int main(void){
+	decltype(foo()); -> referans döndürmeyen fonksiyonlar PR value yani int
+	decltype(bar()); -> referans döndürüyor ise L value yani int&
+	decltype(baz()); -> Geri dönüþ deðeri türü R value ref ise X value 
+
+	int x{43};
+	decltype(foo()) f1 = x; // bir sýkýntý yok, copy init var burada
+
+	decltype(bar()) f2 = x; // burada decltype int& olacak x bir L value ref yani sýkýntý yok.
+	decltype(bar()) f22 = 5; // f22 L value ref, 5 R value ref olduðu için sentaks hatasý
+
+	decltype(baz()) f3 = x; // f3 R value ref, x L value ref. sentaks hatasý
+	decltype(baz()) f4 = 5; // f3 R value ref, 5 R value sýkýntý yok
+}
 /------------------------------------------------------------------------------------------------------------------------/
+Unevaluated Context: Bir ifade için iþlem kodu üretilmemesi anlamýna geliyor. C'de sadece sizeof da vardý bu durum
+CPP'de bir kaç tane var. Bunlardan bir tanesi de decltype. decltype ýn operandý için iþlem kodu üretilmez.
+
+int x{44};
+decltype(x++) y = 5; // x'in deðeri halen 44 çünkü iþlem kodu üretilmedi. Bundan dolayý da side effect gerçekleþmedi
+
+
+int* ptr = nullptr;
+int x{};
+decltype(*ptr) y = x;
+	1- Sentaks hatasý yok, *ptr bir ifade.
+	2- *ptr ifadesi L value yani int&
+	3- UB yok, nullptr dereference ediliyor olsa da iþlem kodu üretilmediði için UB yok.
 
 
 
+
+
+
+
+
+
+
+
+
+-------------------------------------------------
+MÜLAKATTA ÇIKMA ÝHTÝMALÝ YÜKSEK BUNUN!
+int y = 10;
+decltype(y); L value yani int&
+decltype((y)); L value çünkü parantez içine alýnca ifade olarak ele alýnmasýný söylemiþ olduk yani L value oluyor 
+				ve o da int&
+-------------------------------------------------
 
 HATIRLATMA!
 Maximal Munch:Derleyici tokenizing yaparken en uzun tokený elde etmeye çalýþýyor.
