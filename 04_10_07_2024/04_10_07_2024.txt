@@ -1,0 +1,256 @@
+#include <iostream>
+int& get_value() {
+	std::cout << "Enter an integer: ";
+	int x;
+	std::cin >> x;
+
+	
+	return x;
+}
+
+int main(void) {
+	int& r1 = get_value();
+	std::cout << "r1 value = " << r1 << '\n';
+}
+Pointerlarda otomatik ömürlü nesnelerin adresinin döndürülmesine dangling pointer deniyor ve UB.
+Fonksiyon içinde oluþturulan x nesnesi otomatik ömürlü bir nesne ve block scope dýþýnda çýktýðýnda 
+	ömrü sona eriyor. Bunun referansýný döndürmek UB. Çöp deðer döndürüyoruz ve kullanýlmasý UB
+/------------------------------------------------------------------------------------------------------------------------/
+															DEFAULT ARGUMENT
+C dilinde olmayan CPP dilinde olan bir özellik. 
+Belirli, ya da bütün, parametreler için önceden belirlenmiþ bir deðer veriliyor.
+	Ve bu deðer sadece eðer o parametre deðiþkenine argüman yollanmadýysa kullanýlýyor.
+	Yani 4 parametreli bir fonksiyonun son iki parametresine argüman yollanmadýðýnda eðer önceden belirlenmiþ(default argument)
+		bir deðerleri var ise o deðer(ler)i kullanýyor.
+
+Neden?
+	Bazý fonksiyonlarýn belirli parametreleri hep belirli deðerler kullanýlarak çaðrýlýyor.
+	a-Fonksiyonu çaðýran her seferinde o sabit deðeri olan deðerleri yazmasý gerek.
+	b-Nerede zahmet orada eziyet. Nerede zahmet orada hata riski
+		Yani gönderilmesi gereken deðerler yerine baþka deðer yazýlabilir. Bu da istenmeyen hatalara sebep olur
+
+1-Verilen varsayýlan argümanýn sabit olma zorunluluðu yok. Yani bir global deðiþkenin deðerini, bir fonksiyonun
+	geri dönüþ deðerini de default argument olarak kullanabiliriz.
+
+	int foo(int, int, int); -> bir fonksiyon bildirimi
+	int bar(int, int, int = 5); -> 3. parametre deðiþkenine bir deðer gönderilmez ise varsayýlan deðeri 5 olacak.
+	int foo(int, int, int = idf); -> 3. parametre deðiþkeni bir nesne
+		Burada parametrelerin isimleri yok. Parametrelerin isimlerinin olmasý veya olmamasý bir fark oluþturmuyor.
+	int foo(int x, int y, int z = idf); -> Hiçbir fark yok
+
+2-Default argument fonksiyonlarýn tanýmýnda deðil bildiriminde(function prototype) yer alýr.
+	// Örnek -> default deðiþken olarak 10 kullanýlýyor. Parametre deðiþkeni yollamaz ise 15 döndürüyor.
+	 #include <iostream>
+	int& get_value(int x = 10); // fonksiyon bildiriminde default argument kullandýk.
+	int main(void) {
+		int x{};
+		int& r1 = get_value();
+		std::cout << "r1 value = " << r1 << '\n';
+	}
+	int& get_value(int x) {
+		static int xparam = x + 5;
+		return xparam;
+	}
+
+3-Bir fonksiyonda default argument kullanýlmýþ ise, kullanýlan parametrenin saðýnda kalan tüm parametrelerde de
+	default argument kullanýlmasý zorunlu. Kullanýlmaz ise sentaks hatasý.
+	int foo(int, int = 10, int); // sentaks hatasý, 3. parametrenin default deðeri yok
+		Derleyicinin verdiði hata -> 'foo': 3 parametresinin varsayýlan baðýmsýz deðiþkeni eksik	
+	int foo(int, int = 10, int = 0); // sýkýntý yok
+---------------------------------
+void foo(int x = 10, int y = 20, int z = 30);
+int main(void) {
+	foo(7, 8, 9); // legal
+	foo(7, 8); // legal
+	foo(7); // legal
+	foo(); // legal
+}
+void foo(int a, int b, int c) {
+	std::cout << "a = " << a << " b = " << b << " c = " << c << std::endl;
+}
+---------------------------------
+
+4-Parametresi ref olan bir deðiþkene lvalue olduðu sürece default argument verilebilir. 
+	L value reference'a L value expression verilebilir.
+#include <iostream>
+int g = 30;
+void foo(int x = 10, int y = 20, int& z = g);
+int main(void) {
+	foo(); // legal
+}
+void foo(int a, int b, int& c) {
+	std::cout << "a = " << a << " b = " << b << " c = " << c << std::endl;
+}
+5-Parametre const T& ise L ve R value expression verilebilir ama sadece okuma iþlemi yapýlabilir (accessor)
+int g = 30;
+void foo(int x = 10, int y = 20, const int& z = 44);
+int main(void) {
+	foo(); // legal
+}
+void foo(int a, int b, int& c) {
+	std::cout << "a = " << a << " b = " << b << " c = " << c << std::endl;
+}
+6-Pointer parametrelerde default argument alabilir.
+void foo(const char*p = nullptr);
+7-Default argumenti olmayan bir fonksiyona redeclaration iþlemi ile default deðer verebiliriz
+
+	a-)Son parametreye default argument
+	#include <iostream>
+	//engin.h -> engin.h baþlýk dosyasýnda foo fonksiyonunu bildiriyoruz.
+	void foo(int, int, int);
+	//#include "engin.h" -> engin.h 'yý include ettik
+	void foo(int, int, int = 10); // Burada redeclaration sayesinde 3. parametreye default bir deðer ekledik
+	int  main() {
+		foo(1,2);
+	}
+
+	b-)Ýkinci parametreye default argument, normalde saðýnda kalan parametre deðiþkenlerinde def arg olmasý gerektiði için
+		bir wrapper fonksiyon kullanarak bunu yapabiliriz. Default argüment son parametre deðiþkeni olmalý.
+		
+	//engin.h
+	void foo(int x, int y, int z);
+	//#include "engin.h" 
+	void call_foo(int x, int z, int y = 10){
+		foo(x, y, z);
+	} 
+
+	c-)Hem .h dosyasýnda hem de kaynak dosyasýnda default arg. Derleyici bildirimleri gördüðünde fonksiyonlarý
+		kümülatif olarak alacak. Yani alttaki örneðe göre foo fonksiyonunun 2 ve 3. parametreleri default arg'a sahip olacak.
+
+	//engin.h
+	void foo(int, int = 20, int);
+	//#include "engin.h" 
+	void foo(int, int, int = 10); 
+	____________________________+
+	void foo(int, int = 20, int = 10) -> þeklinde gözükecek
+
+	 49:25
+
+
+void foo(int x, int y = x); // geçerli deðil! 
+/------------------------------------------------------------------------------------------------------------------------/
+-Bazý fonksiyonlarda default argument kullanýlmasýnýn sebebi, default argumentin kullanýlýp kullanýlmadýðýný
+	kontrol etmek için
+
+void print_date(int day = -1, int month = -1, int year = -1);
+	Mesela burada day/month/year için -1 deðerleri verilmiþ. Eðer bu parametre deðiþkenlerine bir deðer gönderilmez ise
+		cari gün/ay/yýl ekrana yazdýrýlacak.
+	print_date(13, 02, 2023); -> ekrana 13/02/2023 yazdýracak
+	print_date(13, 02); -> ekrana 13/02/2025 yazdýracak çünkü parametre 3'e deðer göndermedik cari(bulunulan yýl) yýl aldý.
+#define _CRT_SECURE_NO_WARNINGS
+#include <ctime>
+#include <iostream>
+void print_date(int day = -1, int month = -1, int year = -1);
+int main(void) {
+	print_date(4, 6, 1987);
+	print_date(4, 6);
+	print_date(4);
+	print_date();
+}
+// Ýlk veya ortadaki parametrede default argument kullanamayacaðýmýz için [print_date(1, , 1987) gibi bir ifade] hepsini ayný
+	// if bloðu içerisinde nested olarak yazabiliriz. Eðer yýl default arg  ise diðerleri ancak o zaman default olabilir.
+void print_date(int d, int m, int y) {
+	std::time_t sec;
+	std::time(&sec);
+	std::tm* p = std::localtime(&sec);
+	if (y == -1) { 
+		y = p->tm_year + 1900;
+		if (m == -1) {
+			m = p->tm_mon + 1;
+			if (d == -1)
+				d = p->tm_mday;
+		}
+	}
+	std::cout << d << '/' << m << '/' << y << std::endl;
+}
+/------------------------------------------------------------------------------------------------------------------------/
+															TYPE DEDUCTION(TÜR ÇIKARIMI)
+.
+Auto type deduction: C ve CPP'de kullanýlan auto keywordlerinin anlamý farklý.
+	C dilinde otomatik ömürü belirtiyor. Modern CPP öncesi CPPde de ayný anlamdaydý.
+		Modern CPP ile tür çýkarýmý için kullanýlmaya baþlandý.
+auto keywordü bir type holder olarak iþ görüyor. Hangi veri türüne ait olduðu derleyici tarafýndan belirleniyor.
+Type deduction auto keywordü için yapýlýyor. Bu type deduction sonucunda biz deðiþkenin ne olduðunu öðreniyoruz.
+	Yani type deduction deðiþkene verilen deðer için deðil auto için yapýlýyor.
+
+
+auto x = 5; -> burada çýkarýmýn deðiþken için yapýldýðýný düþünelim. 5 bir sabit ve int. Bu durumda auto int olmalý
+auto &x = idf; -> burada idf bir l value expression ve int deðer. Bu durumda x int& mi yoksa int mi?
+const auto &x = 5; const ref ifadelere r value expression verebiliyorduk. Bu durumda x bir reference mý yoksa const int mi?
+	yukarýdaki örneklerden anlaþýlacaðý üzere type deduction auto keywordü için yapýlýyor ve bir TYPE HOLDER olarak çalýþýyor.
+const auto &x = 5; -> burada auto int olacak ve x'in türü const int& olacak.
+	
+ÖZET:
+- auto bir type holder
+- type deduction deðiþken üzerinde deðil auto üzerinde yapýlýyor.
+- Derleyici dilin kurallarýna dayanarak auto yerine hangi türün geldiðini anlar
+	buna baðlý olarak tanýmlanan deðiþkenin de türü tanýmlanýr. autoya karþýlýk gelen tür ile deðiþkenin türü ayný tür olmak zorunda deðil
+
+
+
+ÝFADENÝN TÜRÜ VE ÝFADENÝN DEÐER KATEGORÝSÝNÝ BÝLMEYEN KENDÝNE CPP ÖÐRENÝYOM DEMESÝN
+
+int x = 5; -> bu ifadenin value kategorisi nedir? Eðer cevap L-PR-X vs ise yanlýþ. 
+	deðiþkenlerin tanýmýnýn ifadesi olmaz, olsa olsa veri türü olur. Ýfadelerin value kategorisi olur.
+x -> x burada bir ifade yani artýk value kategorisi var ve L value
+		her ifadenin bir türü vardýr x burada int türünde
+-------------------------------------------------
+// ÖNEMLÝ BÝR KURAL
+Bir deðiþkenin türü referans türünden olabilir ama bir ifadenin türü referans türünden OLAMAZ!
+
+int x = 10; -> veri türü int
+int& r = x; -> r'nin veri türü int&
+int* ptr = &x; -> ptr veri türü int*
+x; -> veri türü int
+r; -> bunun da veri türü int. r demek x demek bu yüzden r int türünden 
+ptr; -> bunun veri türü int*. Ýfadelerin veri türü pointer olabilir 
+-------------------------------------------------
+
+2- auto keywordü default init edilemez. Ya direct ya da copy init edilmesi gerekli.
+	auto x; -> sentaks hatasý
+	auto x = 10; -> legal
+autoya karþýlýk gelen türü Initializer expression ile anlayacaðýz
+	Ýlk deðer veren ifadenin türü ne ise autonun türü o. 
+
+auto keywordü için 3 farklý kural seti var:
+-auto x = expr;
+-auto &x = expr;
+-auto &&x = expr;
+	Bu üç definition içinde yapýlan type deduction büyük ölçüde ayný fakat önemli farklýlýklar var.
+-------------------------------------------------
+/*	auto x = expr;	*/
+1-initializer expression(ilk deðer veren ifade) const bir deðiþkenin oluþturduðu ifade ise
+	const düþüyor.
+
+	const int y = 10;
+	auto x = y; -> auto türü int, const int DEÐÝL 
+2-Bir ifade T& ile define edildiyse ve initializer expr olarak autoya verildiyse T& deðil T olur.
+	int x = 10;
+	int& r = x;
+	auto y = r; // bu yukarýdaki örnek ile ayný mantýk. Bir ifadenin türü T& olamayacaðý için ve r burada bir
+					// ifade olduðu için y'nin türü int (r demek x demek, x int o zaman auto da int)
+int main(void)
+{
+
+
+	char c = 5;
+	auto x = c; // auto türü char çünkü initializer expr char
+	auto y = +c; // integral promotiondan dolayý auto int
+}
+
+
+1:15
+
+
+/------------------------------------------------------------------------------------------------------------------------/
+
+
+
+
+HATIRLATMA!
+Maximal Munch:Derleyici tokenizing yaparken en uzun tokený elde etmeye çalýþýyor.
+	whitespace karakterine kadar olan tokenlarý ayýra ayýra gidiyor. Yani
+
+	void foo(const char *= nullptr) burada *= ayrý bir operatör olarak iþlenir çünkü const chardan sonra
+		whitespace olduðu için const char olarak ele alýnýr.
+	void foo(const char* = nullptr) burada ise const char* default argument olarak nullptr alýyor.
