@@ -6,7 +6,7 @@ scope(kapsam)
 		-File scope, bildirildiði dosyanýn tamamýnda kullanýlanlar.
 		-Block scope
 		-Function prototype 
-		-Function scope (goto labellarý function'ýn her yeridne kullanýlabilir) 
+		-Function scope (goto labellarý fonksiyonun içinde her yerde kullanýlabilir. Tanýmýndan önce bile) 
 	Scopes in CPP
 		-namespace scope (bu file scope'u da kapsýyor)
 		-block scope
@@ -21,8 +21,9 @@ scope(kapsam)
 		a)baþarýlý olabilir
 		b)baþarýsýz olabilir (baþarýsýz olursa sentaks hatasý)
 			context control(check) -> legalite kontrol -> mesela bir fonksiyona deðer atamasý yapmaya çalýþmak
-					int foo(int); // veya kullanýlan ismin geçerli olup olmadýðýný kontrol etme. foo(int) adlý bir fonksiyon varken, foo adlý bir deðiþkene atama yaparsak sentaks hatasý verecek.
-					foo = 5; // name lookup foo'yu bulacak, fakat context control enseye vuracak.
+					int foo(int); // veya kullanýlan ismin geçerli olup olmadýðýný kontrol etme. foo(int) 
+					adlý bir fonksiyon varken, foo adlý bir deðiþkene atama yaparsak sentaks hatasý verecek.
+						foo = 5; // name lookup foo'yu bulacak, fakat context control enseye vuracak.
 				access control -> kullanýlýp kullanýlmayacaðýnýn kontrolü, public private vs
 Ýsim arama bir sýra dahilinde  yapýlýr.
 	- Önce kullanýldýðý bloðun içine bak.
