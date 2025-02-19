@@ -1,0 +1,142 @@
+
+void foo(int *p)
+void foo(int p[])
+Pointer iki farklý þekilde gösterilebiliyordu. int* p veya int p[] þeklinde
+	bundan dolayý bu redeclaration
+
+void bar(int p[6]);
+void bar(int p[7]);
+void bar(int p[8]);
+void bar(int* p);
+Burada 1 tane overload var, parametreleri ayný hepsinin. 
+
+
+void baz(int (*)[10]);
+void baz(int (*)[14]);
+void baz(int (*)[16]);
+Burada 3 tane overload var hepsi farklý tür. Ýlk fonksiyon 10 elemanlý bir dizi istiyor
+	diðerleri 14 ve 16 elemanlý. Bundan dolayý 3 adet overload var. Pointer to an array
+
+void foo(int(int)) // most vexing parse için bir örnek aslýnda bu parametre. 
+void foo(int (*)(int))
+Bu function redeclaration. Birinci foo function type, ikinici function pointer type.
+	Ýlk fonksiyondaki parametre pointer decay uðrayacaðýndan dolayý ayný olacak. redeclaration
+
+void foo(int);
+void foo(int*);
+void foo(int&);
+void foo(int&&);
+4 adet overload var. Hepsi ayrý tür bunlarýn. 
+
+Const overloading bir kelime var. Bunu daha önce görmüþtük aslýnda. const keywordünün &(referans) veya *(pointer) operatörlerinin
+	solunda (low-level const) bulunmasý ile oluyor.
+int foo(int const*)
+int foo(const int*) 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+													FUNCTION OVERLOAD RESOLUTION(f.o.r)
+.
+Function overloading var ise, kaç tane olduðuna bakýlmaksýzýn fonksiyonu çaðýran ifadenin 
+	hangi fonksiyon tarafýndan kullanýlacaðýna karar veren, bir dizi kurallarý ve özellikleri takip ederek yönetilen
+		sürece function overload resolution denir.
+Kurallarý iyi öðrenmek önemli! Sezgisel hareket sýkýntý yaratýyor. Örneðin;
+
+void bar(long double);
+void bar(char);
+
+int main(){
+	bar(4.5);
+}
+Soru 1) Kaç adet overload var? -> 2 adet overload var çünkü, ayný kapsamdalar, imzalarý farklý ve isimleri ayný
+Soru 2) bar(4.5); deyimi hangi fonksiyonu kullanýr?
+	Eðer long double parametreli denildiyse BU YANLIÞ. Problem ambiguity(karasýzlýk) ile alakalý
+	4.5 ifadesi double türünden fakat fonksiyonlar long double ve char parametrelerine sahip.
+	double -> long double tür dönüþümü tür geniþletme(promition)
+	double -> char tür dönüþümü daraltma(narrowing conversion)
+		Dilin kurallarý bu iki iþlem arasýnda karar veremediði için sentaks hatasý veriyor. Yazan hata da ambiguity ile alakalý.
+
+f.o.r
+a- Sentaks hatasý ile sonlanabilir
+	1- n tane overload olmasýna karþýn overloadlardan hiçbiri fonksiyon çaðrýsý ile uyumlu deðildir.
+	2- ambiguity: 2 ya da daha fazla overload arasýnda kalýndýðýnda dilin kurallarý hangi
+		fonksiyonun seçileceðine dair bir kriter sunamýyor. 
+b- Sentaks hatasý yok ise hangi fonksiyonun kullanýlacaðýný bulmuþtur.
+
+f.o.r adým adým çalýþan, kendi içerisinde de alt süreçler geçiren bir süreç.
+KURALLAR;
+
+1- Ýlk aþamada f.o.r n tane fonksiyon overloadlarýný bir kümede topluyor. Bu kümeleme iþlemi yaparken
+	fonksiyonu çaðrýsýnda parametreye gönderilen deðerin türü dikkate alýnmýyor. Oluþturulan bu kümeye
+	function overload set deniyor. Bu kümedeki fonksiyonlara da candidate functions deniyor.
+	ÖNEMLÝ! Bu küme oluþturulurken parametrede kullanýlan ifadenin int double char olmasý gibi þeyler dikkate alýnmýyor.
+		ayný isme, farklý imzalara, ayný kapsama sahip BÜTÜN FONKSÝYONLAR ekleniyor buraya.
+
+
+argüman sayýsý, argüman ve parametre türü(örtülü ok) - ayýrma iþlemi - viable functions - best viable
+2- Function overload set içerisinde iki veya daha fazla candidate function var ise þu kurallar uygulanýr.
+	-Argüman sayýsý kontrol edilir ve arg sayýlarý ayný olan fonksiyonlar sonraki adýma geçer.
+	-Parametre türleri kontrol edilir. Bu aþamada eðer örtülü dönüþüm oluyor ise bunda bir sýkýntý yok.
+		Dönüþüm sýrasýnda veri kaybýnýn olup olmamasý önemli deðil. Önemli olan dönüþümün olmasý
+	-Bu aþamalardan geçen fonksiyonlar "viable functions" olarak ayrý bir küme oluþturur. 
+		Eðer ilk aþamadan sadece 1 adet fonksiyon geldiyse buna 'best viable function' denir
+Bu aþamada 1 tane bile viable function olmaz ise derleyici "ambiguity" hatasý verecek.
+
+NOT: int türü ile çaðýrdýk fakat int parametreli bir fonksiyon yok fakat char var. Burada mesela narrowing conversion olur
+	ve bu fonksiyon viable bir fonksiyon olduðu için bir sentaks hatasý olmaz. 
+
+3- Eðer fonksiyonu çaðýran ve viable function parametrelerinin arasýnda bir dönüþüm var ise
+	dönüþümün kalitesine göre en kaliteli olan seçiliyor. Bu kalite de dilin kurallarýyla belirleniyor.
+
+	1-Variadic Conversion :En kalitesizin dönüþüm. Eðer ortada variadik fonksiyon dýþýnda baþka bir
+		viable fonksiyon var ise her zaman o seçilir. variadic conversion en kötü dönüþüm.
+	2-User-defined Conversion: Bu araç seti C dilinde yok CPP de daha öðrenmedik. Bu dönüþümler, dilin standartýnda olmayan
+		fakat kullanýcýnýn bu dönüþümün yapýlabilmesi için oluþturduðu fonksiyona, derleyicinin bu fonksiyona çaðrý yaparak
+		dönüþümün legal olmasýný saðlayan dönüþümlere denir. Variadik fonksiyona karþý kazanýyor, diðer dönüþümlere kaybediyor.
+
+			struct Nec{ int x{}; };
+			int main() {
+				Nec mynec;
+				mynec = 5; // fonksiyon yok ve bu sentaks hatasý
+			}
+
+			struct Nec{ 
+				int x{}; 
+				Nec(); 
+				Nec(int); // fonksiyonu burada bildiriyoruz. Bu yazýlmaz ise Nec() fonksiyonu sentaks hatasýna sebep veriyor.
+			};
+			int main() {
+				Nec mynec;
+				mynec = 5; // artýk sentaks hatasý deðil çünkü derleyici struct içerisindeki fonksiyonu çaðýracak ve dönüþüm yapýlacak.
+			}
+	3-Standard Conversion: Dilin kurallarý gereði legal olan dönüþümler. Veri kaybýnýn olup olmamasý bu dönüþümün
+		sorunu deðil. Burada legal olan, gerçekleþen tüm dönüþümler var.
+		long double ==> char mesela burada dönüþüm var. Veri kaybý olmasý bu durumu deðiþtirmiyor.
+		int ==> enum burada int türünden enum'a dönüþüm yok.
+		enum ==> int türüne dönüþüm var.
+		int* ==> double* türüne dönüþüm yok
+		int* ==> void* türüne dönüþüm var
+		void* ==> int* türüne ÖRTÜLÜ dönüþüm yok. Yukarýda olan dönüþümlerin hepsi ÖRTÜLÜ dönüþüm.
+		int* ==> bool dönüþüm var. NULL ise 0, adres var ise 1
+
+		Bir tane standart conversion olsaydý o seçilecekti. Birden fazla olursa ne olacak?
+
+		void foo(double);
+		void foo(int);
+		void foo(unsigned int);
+			Mesela burada 3 adet overload var ve çaðýrýlan ifadeye göre 3 adet standart conversion olabilir.
+			1:05
+ 
+
+
+
+
+
+
+
+
+
+
+
+
