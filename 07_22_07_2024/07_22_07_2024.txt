@@ -88,7 +88,8 @@ NOT: int türü ile çaðýrdýk fakat int parametreli bir fonksiyon yok fakat char va
 
 3- Eðer fonksiyonu çaðýran ve viable function parametrelerinin arasýnda bir dönüþüm var ise
 	dönüþümün kalitesine göre en kaliteli olan seçiliyor. Bu kalite de dilin kurallarýyla belirleniyor.
-
+	
+	Aþaðýdaki kategori en düþükten -> en yükseðe. Variadic hep kaybeden, std conversion hep kazanan
 	1-Variadic Conversion :En kalitesizin dönüþüm. Eðer ortada variadik fonksiyon dýþýnda baþka bir
 		viable fonksiyon var ise her zaman o seçilir. variadic conversion en kötü dönüþüm.
 	2-User-defined Conversion: Bu araç seti C dilinde yok CPP de daha öðrenmedik. Bu dönüþümler, dilin standartýnda olmayan
@@ -126,17 +127,143 @@ NOT: int türü ile çaðýrdýk fakat int parametreli bir fonksiyon yok fakat char va
 		void foo(int);
 		void foo(unsigned int);
 			Mesela burada 3 adet overload var ve çaðýrýlan ifadeye göre 3 adet standart conversion olabilir.
-			1:05
- 
 
+		Birden fazla std conversion olmasý durumunda fonksiyonu seçebilmek için üç kategoriye ayrýlýyor.
+			-exact match: Ayný türden parametre deðiþkenleri olmasý durumu
+			-promotion: Kendisinden daha yüksek öneme sahip bir deðiþkene promote edilmesi. short -> int
+				int -> long vs.
+			-standard conversion: En düþük öneme sahip. Exact match, promotion kategorilerine ait	
+				en az bir tane deðiþken yok ise ve birden fazla standard conversion var ise ambiguity hatasý verecek
 
+		1- Exact Match: Argümanla fonksiyonun parametresinin ayný tür olmasý.
+			Ek olarak exact match olarak kabul edilen bazý durumlar var.
+			a- fonksiyon parametresinin const, gönderilen argümanýn const olmamasý arasýnda yapýlan örtülü dönüþüm
+				exact match kabul ediliyor.
+				void foo(const int*);
+				int main(){
+					int x{};
+					foo(&x); // gönderilen argüman int*, fonksiyon parametresi const int*. Burada örtülü dönüþüm var ama gene de exact match
+				}
+			
+			b- Fonksiyon türünden, fonksiyon adresine türüne yapýlan dönüþümler exact match
+				void foo(int (*)(int));
+				int func(int);
+				int main(void){
+					foo(func); -> Burada function to pointer conversion olacak. Exact match
+				}
+			c- Array decay de exact match kabul ediliyor.
+				void foo(int*);
+				int main(){
+					int ar[5]{};
+					foo(ar); // array to pointer conversion var. Exact Match
+				}
+			d- L value referanstan R value referansa yapýlan conversionlar.
+				void foo(int);
+				int main(){
+					int x{434};
+					foo(x); // foo fonksiyonu l value ref istiyor ve biz ona l value yolladýk. Dönüþüm yok.
+					foo(43); // R value referans yolladýk burada fonksiyonun parametresinin deðer kategorisini deðiþtirdik.
+								// L value ref -> R value ref. Yapýlan bu dönüþüm exact match
+				}
+		2- Promotion: Ýki kategoriye ayrýlýyor. 
+			a- integral promotion: int altý türlerden int türüne yapýlan conversionlar.
+				- char 
+				- unsigned char 
+				- signed char 
+				- short 
+				- bool 
+					türlerinden int türüne promotion var.
 
+				void foo(int);
+				void foo(double);
+				int main(){
+					foo('A'); // char türünden double türüne 'promotion' olmadýðý için int türüne promote edilecek.
+								// eðer foo(int) olmasaydý conversion kýsmýnda iþleme alýnacaktý.
+				}
+			
+			b- float türünden double türüne yapýlan promotion. Long double buna dahil deðil. Sadece flottan doublea
+				void foo(long double);
+				void foo(double);
+				void foo(int);
+				int main(){
+					foo(3.5f); // float türünden int, double ve long double türüne CONVERSION var fakat
+								// long double ve int türlerine promotion yok. Sadece double türüne promotion var.
+				}
+		
+		3- Conversion: Eðer yukarýdaki kategorilerden hiçbiri yok ise standart conversion kullanýlýyor.
+			Eðer birden fazla standart conversion var ise bu ambiguity hatasý. Promotion kýsmýndaki örnekte 
+				birden fazla conversion var. float hem double, hem long double hem de int'e dönüþtürülebilir.
+				Bu ambiguity hatasý verir.
+			void foo(char);
+			void foo(long double);
+			void foo(double);
+			void foo(int);
+			int main(){
+				// double parametreli fonksiyonu görmezden gel
+				foo(3.4);  // sentaks hatasý verecek çünkü int, char ve double arasýnda conversion var.
+				foo(3.4f); // floattan 3 türe conversion var. Sentaks hatasý, ambiguity
 
+				// double parametreli fonksiyon eklendi
+				foo(3.4); artýk sentaks hatasý deðil çünkü exact match var
+				foo(3.4f); artýk sentaks hatasý deðil çünkü float -> double promotion var
+			}
+	
+			void foo(unsigned int);
+			void foo(long double);
 
+			int main(){
+				foo(12); // Argüman int türünden. int türünden unsigned int türüne yapýlan dönüþüm exact match olmadýðý
+							için burada ambiguity var.
+			}
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ÖZEL DURUMLAR
 
+1- const overloading: 
+const olan ve olmayan nesneler için ayrý implementasyonlar yapýyoruz. Bunu yapmanýn en kolay yolu
+	2 adet overload oluþturmak. const T* sadece read-only iken int* mutable yani yapýlan iþlemler çok farklý olacak.
+void foo(int* param){
+	std::cout << "Value of param: " << *param << std::endl;
+}
+void foo(const int* param){
+	std::cout << "Value of param: " << *param << std::endl;
+}
 
+int main(void){
+	const int x{45};
+	int y{807685};
 
+	foo(&x); // x const nesne ve const T* türünden T* türüne örtülü dönüþüm yok.
+				// bundan dolayý foo(int*) fonksiyonu viable bile deðil. const int* parametreli fonksiyon çaðrýlacak.
+	foo(&y); // burada her iki fonksiyonda viable olacak. Derleyici const olmayan parametreli fonksiyona
+				// öncelik tanýdýðý için int* parametreli fonksiyon çaðrýlacak
+ }
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+2- Call by value ve call by reference olan fonksiyonlar: Bu overload þeklinin kullanýlmasýný önermiyorlar.
 
+void bar(int);
+void bar(int &);
+void bar(const int &);
+int main(){
+	int x{};
+	// const int& fonksiyonunu görmezden gel
+	bar(x); // ambiguity, x bir l val reference. Hem int& hem de int ikisi de viable fonksiyon ve
+				hangisinin seçileceðine dair bir kriter yok.
+	bar(10); // 10 burada rvalue ref olduðu için int tarafýndan kullanýlacak
 
+	//const int& fonksiyonu eklendi
+	bar(10); // burada gene ambiguity oldu. const T& türlerine R value derleyicinin oluþturduðu
+		temp val sayesinde kullanýlabiliyor. T ve const T& arasýnda ayrým yapan bir kural olmadýðý için
+		ambiguity hatasý.
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+3- Parametrede varsayýlan argüman(default argument) olmasý
+
+void foo(int, int = 0);
+void foo(int);
+int main(){
+	foo(12); // default parametrenin olmasý ile ilk fonksiyon da viable oluyor. 
+				// hangisinin seçileceðine dair bir kural olmadýðý için bu ambiguity.
+}
+1:37
 
