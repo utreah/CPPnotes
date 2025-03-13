@@ -265,5 +265,153 @@ int main(){
 	foo(12); // default parametrenin olmasý ile ilk fonksiyon da viable oluyor. 
 				// hangisinin seçileceðine dair bir kural olmadýðý için bu ambiguity.
 }
-1:37
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+4- NULL pointer
 
+- C den gelen NULL makrosu kullanýlmýyor CPP'de. Bundan dolayý bir pointer parametre deðiþkenine
+		null pointer göndermek için 0(sýfýr) yazýlýyor. Fakat bu da function overloading kýsmýnda aþýrý tehlikeli.
+void func(int *);
+void func(int); // bu 2.2 notundan sonra eklendi kabul et
+int main(void){
+	func(0); // Bir sýkýntý yok, int* parametreli fonksiyona null pointer olarak gidecek.
+	// 2.2
+	func(0); // Sýkýntý var çünkü 0 tam sayýsýnýn ilk fonksiyon için null pointera dönüþmesi standart conversion.
+				// ikinci fonksiyonda ise EXACT MATCH var bundan dolayý ikinci fonksiyon çaðrýlacak.
+				// Bu da kendi içinde problem. Ya biz pointer deðiþkenli fonksiyonu çaðýrmak istemiþ olsaydýk?
+				// nullptr, nullptr_t türünden bir sabit keyword. 
+	func(nullptr); // nullptr türünden diðer pointer türlerine örtülü dönüþüm var yani standart conversion.
+					// tam/gerçek sayý türlerine dönüþüm yok.
+}
+	
+- 2 farklý fonksiyonda pointer deðiþkenleri olmasý ve nullptr gönderilmesi ile ambiguity oluþur.
+void func(int*);
+void func(double*);
+int main(void){
+	func(nullptr); // iki fonksiyonda pointer aldýðý için ambiguity oluþur burada.
+}
+	
+- Ýki adet standart conversion'un bulunduðu yerde ambiguity var.
+
+void func(int*);
+void func(double);
+int main(void){
+	func(0); // burada 0 hem int* için null pointer'a dönüþebilir hem de double türüne dönüþebilir. 
+				//Bundan dolayý ambiguity var.
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+5- void* vs bool
+
+void func(void*);
+void func(bool);
+
+int main(){
+	int x = 10;
+	func(&x); // normalde x burada hem void* türüne hem de bool türüne convert olabiliyor. Bundan dolayý
+				// bu iki fonksiyonda viable yani normal olarka ambiguity oluþmasý gerek. Fakat burada bir istisna var
+					// void* bool'a göre öncelik alýyor. Daha önce görmüþtük bool türüne pointer deðiþkeni verilmesi 
+					// durumunda deðiþken nullptr ise 0, deðil ise 1 deðerini alýyordu. Mantýk bu sadece burada istisna
+					// olduðu için void* çaðrýlýyor.
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+6- Const ref istisnasý
+	L value ref, R value reference'a baðlanmaz. 
+	R value ref, L value reference'a baðlanmaz. Function Overloading için kullanýlabilir
+
+void func(int&); // l value ref
+void func(int&&); // r value ref
+int main(void){
+	int x = 10;
+	func(12); // 12 r value olduðu için ikinci fonksiyon çaðrýlacak
+	func(x); // x l value olduðu için ilk fonksiyon çaðrýlacak.
+}
+Yukarýdaki þekilde çok çýkmýyor karþýmýza ama const keywordlü olaný sýkýntý.
+
+-const T& olmasý durumunda derleyici geçici bir nesne oluþturuyor. Bu sayede const L refler R value ref tutabiliyor.
+#include <iostream>
+void func(const int&){ // const L value reference == Hem L value ref hem de R value ref alabilir.
+	std::cout << "func(const int&)\n";
+}
+void func(int&&){ // R value reference = Sadece R value ref
+	std::cout << "func(int&&)\n";
+}
+void func(int&){
+	std::cout << "func(int&)\n";
+	
+}
+int main(){
+	const int x{5};
+	int y{12};
+	func(y); // y nesnesi const olmadýðý için int& parametreli fonksiyonu çaðýracak
+	func(x); // x nesnesi const olduðu için const int& parametreli fonksiyonu çaðýracak.
+
+	func(34); // 34 bir R value olduðu için normalde hem const int& hem de int&& fonksiyonlarý viable oluyor.
+				// çünkü const T& hem L hem R value tutabiliyordu(yukarýda açýkladým) normalde ambiguity olmasý gerekir
+					// fakat CPP11(modern cpp) ile eklenen kural ile burada R Value Ref tercih edilecek.
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+expr bir ifade ve bu ifadenin primary value kategorisi L value reference.
+Ben öyle bir iþlem yapmak istiyorum ki hem expr'ý kullanýcam hem de bunu R value ref olarak kullanmak istiyorum
+2 yolu var bunu yapmanýn.
+1- static_cast kullanmak.
+	static_cast<int&&>(expr); -> expr ifadesi R value ref oldu þimdi. 
+void foo(const int&){
+	std::cout <<"const int&\n";
+}
+void foo(int&&){
+	std::cout <<"int&&\n";
+}
+int main(void){
+	int x = 10;
+	foo(x); // const int& çaðrýlacak
+	foo(static_cast<int&&>(x)); // x static cast sayesinde int&& türüne dönüþtü. Ve deðer kategorisi R value ref oldu.
+									// int&& çaðrýlacak.
+}
+
+2- Compile timeda L value ref'i R value ref olarak, R value reference'ý R value olarak alýnmasýný saðlayan
+	bir fonksiyon var. Bunun adý std::move(expr);
+int main(){
+	// yukarýdaki fonksiyonlarý kullanmaya devam
+
+	foo(std::move(x)); // x'in deðer kategorisi R value referansýna geçti. 
+}
+Bu fonksiyon taþýma semantiði konusunda kullanýlacakmýþ.
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+2:12
+
+MÜLAKAT SORUSU!!!
+func(123) yani R value ile çaðrýlýyor. Ekrana çýktý yapacak fonksiyon hangisi olur?
+
+#include <iostream>
+void foo(int && r){
+	std::cout << "foo(int&& r)\n";
+}
+void foo(const int& r){
+	std::cout << "foo(const int& r)\n";
+}
+void func(int&& r){
+	foo(r);
+}
+
+int main(void){
+	func(123);
+}
+CEVAP:
+Ekrana const int& r parametreli fonksiyon yazar. func R value reference ile çaðrýlýyor. 
+	foo ise r nesnesi ile yani L value reference ile çaðrýlýyor. const int& hem L hem R value ref alýyor.
+	Burada foo'nun gönderdiði nesnenin Veri türü int&&. Referans kategorisi ile veri türü karýþtýrýlmamalý.
+	r'nin int&& olmasý onun referans kategorisi ile alakasý yok. Bir nesnenin ismi her zaman L value reftir.
+
+EK OLARAK
+	Eðer R value ref olarak gönderdiðimiz deðeri R value ref olarak kullanmak istiyor isek
+	std::move(r); þeklinde çaðýrmalýyýz diðer fonksiyonu. Bu sayede R value ref olarak gelen deðer, R value ref olarak
+		gidebilir. int&& r parametreli fonksiyonun içinde foo foo(std::move(r))
