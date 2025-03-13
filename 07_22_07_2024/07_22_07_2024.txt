@@ -298,6 +298,21 @@ int main(void){
 	func(0); // burada 0 hem int* için null pointer'a dönüþebilir hem de double türüne dönüþebilir. 
 				//Bundan dolayý ambiguity var.
 }
+
+- Kütüphanelerde std::nullptr_t kullanýlabiliyor. Bu nullptr'in veri türü. Bunun kullanýlma sebebi 
+	nullptr ile özel bir fonksiyonun overload olmasýný istiyor olabilirler. nullptr_t türünden diðer pointer
+		türlerine dönüþüm var fakat pointer türlerinden nullptr_t türüne dönüþüm yok.
+
+void func(std::nullptr_t t);
+void func(int* t);
+int main(){
+	int x = 10;
+	func(nullptr); // nullptr bþaka türlere dönüþüyor iki fonksiyonda viable aslýnda. Ama nullptr_t exact match olduðu
+						// için o seçilecek.
+	func(&x); // (int* t parametreli fonksiyonu görmezden gel) burada x int türünden ve int* türünden
+				// nullptr_t türüne dönüþüm yok. Bu yüzden hata var burada	
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 5- void* vs bool
 
@@ -351,7 +366,7 @@ int main(){
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-expr bir ifade ve bu ifadenin primary value kategorisi L value reference.
+7-expr bir ifade ve bu ifadenin primary value kategorisi L value reference.
 Ben öyle bir iþlem yapmak istiyorum ki hem expr'ý kullanýcam hem de bunu R value ref olarak kullanmak istiyorum
 2 yolu var bunu yapmanýn.
 1- static_cast kullanmak.
@@ -380,13 +395,51 @@ Bu fonksiyon taþýma semantiði konusunda kullanýlacakmýþ.
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+8- Birden fazla parametre olmasý
 
+	Birden fazla viable fonksiyon var ise ambiguity vermeden önce þu kuralý kontrol edecek;
+		-en az bir parametrede diðerlerine üstünlük saðlayacak 
+			ancak diðer parametrelerde diðerlerinden kötü olmayacak.
+		Eðer bu koþulu saðlayan bir fonksiyon var ise o seçilecek yok ise ambiguity. 
 
+void func(int, double, long);
+void func(char, int, double);
+void func(long, long, char);
+int main(){
+	func(12, 12u, 5); 
+		/*
+			12 burada ilk fonksiyon ile exact match iken diðerlerinde conversion var. Bu yüzden ilk fonksiyonun
+				seçilebilmesi için diðer 2 parametre de ayný ya da daha iyi olmalý.
+				12u unsigned int, ikinci parametrelerde double int ve long için std conversion olacak yani ayný.
+				5 ise int long double char türüne std conversion olacak yani ayný. Bu durumda ilk fonksiyon overload edilecek.
+		*/
+	func(12, 12u, 5.f); 
+		/*
+			Burada ambiguity var. Çünkü üstünlük saðlayan parametre yok hatta ilk fonksiyonun ilk parametresinde
+				exact match var. 5.f ikinci fonksiyonun son parametresi arasýnda promition var(conversiondan daha iyi)
+					fonksiyonun diðer parametreleri diðer fonksiyonlarýn parametrelerinden kötü.
+		*/
+	func(12u, 12u, 5.f); 
+		/*
+			Ambiguity yok burada ikinci fonksiyon seçilecek. 12u unsigned int olduðu için int, char, long türlerine
+				std conversion gerçekleþecek. 5.f float türünden double türüne ise promotion olacak. Bundan dolayý
+					ikinci fonksiyon overload edilecek.
+		*/
 
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+9- bool distinct bir tür.	
+	CPP'de bool ayrý bir veri türü. C dilinde olduðu gibi int boolean deðil. Karþýlaþtýrma operatörlerinin
+		ürettiði deðer C dilinde int iken CPP dilinde bool türünden. Bu sayede function overloading konusunda
+			ayrým yapabiliyoruz.
+void func(int);
+void func(bool);
 
-
-
-2:12
+int main(void){
+	func(true); // exact match
+	func(10 > 5); // bu da bool ile exact match. C dilinde functoin overloading olsaydý bu ambiguity oluþtururdu
+					// çünkü elde edilen deðer int türünden olacaktý.
+}
 
 MÜLAKAT SORUSU!!!
 func(123) yani R value ile çaðrýlýyor. Ekrana çýktý yapacak fonksiyon hangisi olur?
