@@ -1,0 +1,164 @@
+Global namespacede tanýmlanmýþ fonksiyonlar için üç isim var.
+1- global function
+2- free function(daha yaygýn olaný)
+3- stand-alone function
+C dilinde member function gibi þeyler olmadýðý için kavram karýþýklýðýný önlemek için yeni terimler üretilmiþ.
+Bu yazdýðým þey aþaðýdaki notlarý okuduktan sonra daha fazla anlam ifade edecek. 
+
+CLASSES(SINIFLAR)
+
+Class demek OOP demek deðil. C++ Nesne yönelimli programlama dili deðil. Çok paradigmalý bir dil.
+	Yani Nesne yönelimli programlamaya da destek veriyor. 
+
+Data abstraction: Problem domainindeki varlýklarýn yazýlýmsal olarak temsil edilmesi.
+
+C dilindeki structures CPP dilinde sýnýf türünde. enum Class ise class-type deðil.
+Bir sýnýfýn bildirimi çok basit. class keyword + class_tag. 
+class myclass; -> non-defining declaration(forward declaration) Burada myclass adýnda bir class olduðunu söylüyoruz
+	fakat bu classýn içerisinde neler olduðunu vermiyoruz. Yani bir declaration var burada.
+	Her definition bir declarationdur ama her declaration bir definition deðildir. 
+
+struct Nec{
+	// C dilinde structlarýn içerisinde en az 1 adet struct member bulunmasý zorunlu.
+	// CPP dilinde sýnýf türlerinin içi boþ olabilir. Bunlara "empty class" deniyor ve kullanýmý yaygýn.
+};
+
+Küme parantezlerinin arasýnda kalan alana "declarative region" deniyor.
+Burada bildirilen varlýklara class members deniyor. Bu memberlarýn 3 kategorisi var.
+	-data member
+	-member function
+		Bildirim global namespacede deðil sýnýf içerisinde yapýlýyor. Assembly koduna dönüþtürüldüðünde
+			fonksiyon fonksiyondur nerede bildirildiðinin önemi yok. Bu dil düzeyinde öneme sahip bir kavram.
+			1- Dilin diðer araçlarýyla daha uyumlu olmasý için
+			2- Yazýlan kodun daha yüksek ifade gücüne sahip olmasý için
+			3- Kodun daha yalýn olmasýný saðlýyor. 
+	-type member/member type/nested type
+		Nested typelar struct, enum türleri olabilir. 
+		Nerede bütün türler nested type olabilir. 
+class Nec{
+	//declarative region
+	int mx; // data member
+	void foo(int); // member function
+	struct Nested{}; // Nested type
+	enum colour {Blue, Black, Red}; // Nested type
+	using Dollar = double; // Nested type, bu sýnýfa özel bir type-alias bu
+};
+
+
+Sýnýf ayný zamanda bir scope belirtiyor. C ve CPP arasýnda fark var.
+CPP;
+namespace scope -> Bu C dilinde yok bunun yerine file scope var.
+block scope
+class scope		-> Bu scope C dilinde yok. 
+function prototype scope
+function scope
+
+
+Öyle isim kullanýmlaýr var ki bu kullanýmlara iliþkin isimler bir sýnýf tanýmýnda aranýr(name lookup)
+Sýnýf tanýmýnda arandýðý 3 adet senaryo var. Bu senaryolarýn oluþtuduðu kümeye "Qualified Name" deniyor
+(bir sýnýf türü olmasý þartýyla)
+1-Bir isim nokta operatörünün sað operandý olarak kullanýldýysa. x.y
+2-Bir isim ok operatörünün sað operandý olarak kullanýldýysa. ptr->a
+3-Bir isim scope resolution operatörünün sað operandý olarak kullanýldýysa. myclass::b;
+#include <iostream>
+struct mystruct{
+	int x;
+	static int y;
+};
+int main() {
+	mystruct Nec;
+	mystruct* NecPTR;
+	auto a = x; // sentaks hatasý, x bir unqualified name. Name lookup mystruct sýnýfý içerisinde bulunan
+				// x ile eþleþemez çünkü scopelar farklý.
+	auto b = Nec.x;
+	auto c = NecPTR->x;
+	mystruct::y; // scope resolution ile eriþebilmek için eriþtiðimiz class member statik olmalý.
+}
+Kod derlenirken aþaðýdaki yolu izliyor. 
+name lookup = Bu süreçte kullanýlan isimleri contexte  bakmadan bulmaya çalýþýyor. 
+int main(void){
+	int func = 10;
+	func(10, 20); // Mesela burada name lookup func ismini bulacak. 
+}
+	context control = namelookup'ýn baþarýlý olmasýyla bulunan ismin legal olup olmadýðý kontrol ediliyor.
+		Yukarýdaki kodda func name lookup aþamasýný baþarýyla tamamlasa da context controlde hata verecek. Çünkü 
+			func int türünden bir nesne iken fonksiyon çaðrý operatörü ile kullanýlmýþ.
+
+		access control = namelookup ve context control aþamalarýný geçtitken sonra, o isme eriþim izni
+			olup olmadýðý kontrol edilir. private bir sýnýf üyesine dýþarýdan eriþmeye çalýþýrsak bu aþamada
+				hata alýrýz. (C dilinde access control yok)
+Golden Rules of Name lookup;
+-Sýrayla yapýlýr. Önce bulunduðu blocktan tanýmlandýðý yere kadar arar, kapsayan bloktan kullanýldýðý bloða kadar
+	arama yapar. Eðer kapsayan bloklarýn hiçbirinde bulunamaz ise namespacede arar. Bulamaz ise hata verir.
+-Ýsim arama, aranan ismin bulunmasýyla sona erer bir daha baþlamaz.
+class myclass{
+	int x;
+};
+void func(int);
+int main(){
+	int func = 5;
+	func(10); // burada int func'ý bulduktan sonra arama sona erecek. Context control namelookuptan sonra yapýlacak.
+				// context control hata verdi diye ayný isim için tekrar namelookup yapýlmayacak.
+	myclass Eng;
+	Eng.x; // Bu hatalý. Çünkü classlarýn memberlarý default olarak private tanýmlanýyor(ileride görülecek)
+			// name lookup baþarýlý olacak, context control baþarýlý olacak fakat access control hata verecek.
+}
+--------------------------------------------------------------------------------------------
+Class memberlarý kendi içinde de iki gruba ayrýlýyor(nested type hariç)
+Eðer static keywordü kullanýlmaz ise non-static member oluyor. Çok ileride öðrenilecek bu farklar
+Data Members:
+	-non-static data member
+	-static data member
+Member Functions
+	-non-static member function
+	-static member function
+Nested Type
+--------------------------------------------------------------------------------------------
+Sýnýflarýn non-static memberlarý sýnýfýn kendisine ait. Sýnýfýn içerisinde tanýmlanan her non static deðiþken için
+	gerekens sizeof(class) deðeri artacaktýr. Sýnýfýn içerisindeki memberlara object - instance deniyor.
+	Buradaki object OOPdeki object ile ayný deðil. Non-static memberlara instance deniyor. 
+class myclass{
+	int x, y; // 8byte
+};
+
+Sýnýfýn hiçbir memberý yok ise sizeof deðeri 1 BYTE olacak. 1 Byte sýnýf için adres oluþturulabilmesi için
+	gerekli alaný saðlýyor. Bir nesnenin bellek ihtiyacý asla 0 olamaz.
+
+
+class myclass{
+	int x;
+	double x;
+}; // sentaks hatasý, ayný isme sahip iki nesne olamaz.
+class myclass{
+	int x;
+	void x(int);
+}; // sentaks hatasý, ikisinin de ayný olamamasýnýn sebebi varlýðýn türü deðil, ayný scopeta olmalarý.
+
+void func(int); //namespace scope
+class myclass{
+	int x;
+	void func(int); // class scope
+}; // Function overloading yok burada. Çünkü ikisinin de scopelarý farklý. FO olmasý için ayný scopeta olmasý gerek
+
+class myclass{
+	void func(int);
+	void func(double);
+}; // Ýkisi de ayný scopeta, imzalarý farklý, isimleri ayný olduðu için function overloading olur.
+
+ÖNEMLÝ!!
+Eðer bir fonksiyon ayný scopeta, ayný imza ve isim ile iki kez yazýldýysa buna function overloading deniyordu.
+void func(int);
+void func(int);
+Mesela bu function redeclaration.
+Fakat eðer classýn içerisinde bir fonksiyon iki defa yazýldýysa bu SENTAKS HATASI. Sýnýflarýn memberlarý için
+	redeclaration legal deðil. 
+class myclass{
+	void func(int);
+	void func(int); 
+};
+
+Access Control: 
+1:25
+
+
+
