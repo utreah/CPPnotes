@@ -1,6 +1,5 @@
-# C ve C++ Konu Baþlýklarý
+# C++ Konu Baþlýklarý
 
-Bu çalýþma, C ve C++ programlama dilleri arasýndaki farklarý, temel ve ileri seviye C++ konularýný kapsamaktadýr. Aþaðýda derslerin konulara göre sýralanmýþ içeriðini bulabilirsiniz.
 
 ## 1-10: Temel Konular
 - C ve C++ arasýndaki farklar
@@ -47,5 +46,4 @@ Bu çalýþma, C ve C++ programlama dilleri arasýndaki farklarý, temel ve ileri sev
 - `make_unique`, `make_shared`, `reset`, `release`, `use_count`
 
 ---
-**Teþekkür:** Aþaðýdaki sýralama için **Resul Muhammed** adlý arkadaþa teþekkürler!
 
