@@ -1,0 +1,83 @@
+int x; -> x'in deðer kategorisi yoktur. Deðer kategorileri ifadeler için vardýr.
+int &r; -> Bu deðiþkenin data type'ý int&
+	r-> fakat bu ifadenin primary value categorysinin ne olduðu baþka bir þey.
+int &&rf; -> Data type'ý int&& fakat value kategorisi ifadenin kullanýldýðý yere göre deðiþir. 
+	Ortada bir isim var ise, ismin oluþturduuðu ifade L value expressiondur. 
+----------------------------------------------------------------------------------------------------------------
+Eðer inline expansion söz konusu deðil iseCPP/C dilinde baþka kaynak dosyalarýnda bulunuan fonksiyonlarý 
+	kullanabilmek için derleyici tarafýndan .obj dosyalarýna LINKER(dosyalarý birbirne baðlayan araç) 
+	için external reference yazýlýyor. Bu external referencelar fonksiyonu temsil eden, 
+	derleyici tarafýndan belirlenen notlar gibi düþünebiliriz.
+(EXTERNAL REFERENCE: .obj dosyalarýnda baþka kaynak dosyasýndaki fonksiyonlarý temsil eden, o fonksiyonlara navige eden kodlar)
+int sum(int, int); -> Mesela bu fonksiyon için @sum_i_i gibi bir external reference oluþturuyor.
+	Bu referansýn nasýl olacaðý(notasyonu) derleyiciye baðlý. 
+
+C dili ve CPP burada bir farklýlýða sahip. CPP'de function overloading olduðu için oluþturduðu bu referanslar
+	fonksiyonun özelliklerine uygun oluyor. C dilinde FO olmadýðý için genellikle, sadece fonksiyonun adý kullanýlýyor.
+Yukarýdaki sum örneði için;
+@sum_i_i	-> CPP
+@sum_d_d	-> CPP
+@sum		-> C
+
+CPP programlarýnda C dilinde yazýlmýþ derlenmiþ fonksiyonlar kullanýlabiliyor. C dilinde FO olmamasýndan dolayý
+	.obj dosyasýnda bulunan external referencelar farklý oluyor ve bu da LNK aþamasýnda hataya sebep veriyor.
+(linkertest.c bu örnek için)
+#include <iostream>
+int sum(int, int);
+int main() {
+	auto x = sum(45, 47);
+	std::cout << "x = " << x << std::endl;
+}çözümlenmemiþ dýþ sembol "int __cdecl sum(int,int)" (?sum@@YAHHH@Z) için main iþlevinde baþvuruldu
+
+Bunu çözmek için CPP de þöyle bir çözüm yolu bulunmuþ. Fonksiyonun baþýna bu fonksiyonun C dilinden geldiðini
+	ve C dilinin kurallarýna göre external reference bakýlmasý gerektiðini anlamýna gelen (extern "C") yazýyoruz.
+#include <iostream>
+extern "C" int sum(int, int);
+int main() {
+	auto x = sum(45, 47);
+	std::cout << "x = " << x << std::endl;
+}
+Bu þekilde yazýldýðýnda LNK aþamasýnda bir hata olmayacak ve program derlenecek. 
+
+
+Bir baþlýk dosyasýna hem C hem CPP kodlarý eriþiyor ise Conditional Compiling kullanarak
+	her iki dil içinde uyumlu hale getirebiliriz. 
+
+Fonksiyonlarýn baþýna tek tek extern "C" yazmak yerine bir blok oluþturup o bloðun baþýna extern "C" yazarak
+	yapabiliriz. Oluþturulan bloðun içine de fonksiyon bildirimleri yazýlýr.
+//condcomp.h
+extern "C"{
+	fonksiyon bildirimleri buraya
+}
+extern "C" {
+	int foo(int, int);
+	int bar(int, double);
+	int baz(char, char);
+	int bom(long, int);
+}
+
+Hem C hem CPP dili için uyumlu hale getirmek için predefined constants/macros kullanarak yapabiliriz.
+	C dili için __STDC__, CPP için __cplusplus makrolarý tanýmlý oluyor. Bunu kullanarak #ifdef (conditional compiling)
+	ile hem C hem CPP uyumlu hale getirebiliriz.
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+    int foo(int, int);
+    int bar(int, double);
+    int baz(char, char);
+    int bom(long, int);
+
+#ifdef __cplusplus
+}
+#endif
+
+Eðer C++ ile derleniyor ise ilk ifdeften extern "C"{ eklenecek ve son ifdeften gelen köþeli parantez ile kapatýlacak.
+	Eðer C ise direkt fonksiyonlarý olduðu gibi kullanýcaz. 
+----------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------
+
+
