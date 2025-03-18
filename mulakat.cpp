@@ -74,6 +74,12 @@ Ekrana const int& r parametreli fonksiyon yazar.func R value reference ile çaðrý
 foo ise r nesnesi ile yani L value reference ile çaðrýlýyor. const int& hem L hem R value ref alýyor.
 Burada foo'nun gönderdiði nesnenin Veri türü int&&. Referans kategorisi ile veri türü karýþtýrýlmamalý.
 r'nin int&& olmasý onun referans kategorisi ile alakasý yok. Bir nesnenin ismi her zaman L value reftir.
+
+int x; -> x'in deðer kategorisi yoktur. Deðer kategorileri ifadeler için vardýr.
+int &r; -> Bu deðiþkenin data type'ý int&
+	r-> fakat bu ifadenin primary value categorysinin ne olduðu baþka bir þey.
+int &&rf; -> Data type'ý int&& fakat value kategorisi ifadenin kullanýldýðý yere göre deðiþir. 
+	Ortada bir isim var ise, ismin oluþturduuðu ifade L value expressiondur. 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
