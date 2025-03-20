@@ -151,14 +151,93 @@ void func(int);
 void func(int);
 Mesela bu function redeclaration.
 Fakat eðer classýn içerisinde bir fonksiyon iki defa yazýldýysa bu SENTAKS HATASI. Sýnýflarýn memberlarý için
-	redeclaration legal deðil. 
+	redeclaration söz konusu deðil. 
 class myclass{
 	void func(int);
 	void func(int); 
 };
-
-Access Control: 
-1:25
+--------------------------------------------------------------------------------------------
 
 
+Sýnýf türlerinin 3 adet access specifierý var. Bu access specifierlar classýn memberlarýnýn nasýl eriþebileceðini
+	belirleyen niteleyiciler. CPP dilinde access specifierlar keyword ve bölge(region) niteliyorlar.
+	class sýnýf türünün memberlarý access specifier kullanýlmaz ise default olarak private iken
+		struct sýnýf türünün memberlarý public. 
+class MyClass{
+	int x;
+}; // Burada x private non-static member
+struct MyStruct{
+	int y;
+}; // y burada public non-static member. 
+
+Access Specifiers;
+1-public
+2-protected
+3-private
+Bir access specifier kullanýldýðýnda sonraki access specifiera kadar olan bölgeyi kaplýyor.
+Kullaným þekli keyword + : -> public: / private: / protected: þeklinde. Ýki nokta üst üste tokený geliyor keywordten sonra
+
+class Myclass{
+	public:
+	// sonraki access specifiera kadar bütün memberlar public olacak. Region vs bunlarý yukarýda notu var.
+		// class'ýn parantez arasýnda kalan alana region deniyordu.
+
+	int x; // x public
+	double dval; // dval public
+
+	private:
+	int foo(); // foo fonksiyonu private
+
+	protected: 
+	int bar(int); // bar fonksiyonu protected
+};
+Access specifierlar sýnýf türünün içerisinde birden fazla kez kullanýlabilir.
+class myclass{
+	public:
+	int x;
+	private:
+	int y;
+	public:
+	double z;
+};
+
+int main(){
+	myclass m;
+	auto a = m.y; // sentaks hatasý çünkü private membera eriþmeye çalýþýyoruz.
+	auto b = m.x; // bir sýkýntý yok x public
+}
+
+-Client kod tarafýndan eriþilmesini istemediðimiz memberlarý private region içine koyuyoruz.
+	Information hiding deniyor buna.
+	Direkt olarak kullanýlmasý gereken/kullanýlan memberlarý da public region içine.
+
+-Class içerisinde farklý access specifier içerisinde bulunan, farklý imza, ayný isme sahip fonksiyonlar
+	function overload oluþturur.
+
+class MyClass{
+	public:
+	void foo(int);
+	private:
+	void foo(double;)
+}; Burada herhangi bir problem yok, isimler ayný, imzalar farklý ve scopelar ayný. public ve private keywordleri
+	ayrý bir kapsama(scope) sahip deðil. Sadece ayný kapsam içerisinde regionlar oluþturuyor.
+
+
+Public:		Herkese açýk, herkes tarafýndan kullanýlabilen.
+Private:	Sadece class memberlarýna açýk, client tarafýndan kullanýlamayan.
+Protected:	Bu keyword için C'den gelen bir karþýlýk yok. Ýleride öðreneceðimiz inheritance(miras/kalýtým) konusu ile alakalý bu.
+				Onu öðrenene kadar protected ile private arasýnda bir fark yok bizim için.
+
+Sýnýfýn data memberlarý private bölümüne koyuluyor. 
+Bu sayede;
+-O sýnýf hakkýnda öðrenilmesi gereken bilgi azalýyor. Çünkü data memberlarýný ve ne iþe yaradýklarý gibi
+	bilgileri bilmemiz gerekmiyor. 
+-Runtimeda çalýþma þeklinin deðiþmesini riske etmiyoruz.
+	Data memberlarý üzerinde yanlýþlýkla yaptýðýmýz bir deðiþiklik programýn çalýþma zamanýnda farklý þekilde
+	çalýþmasýna sebep verebilir. Private kýsmýnda tutarak bu riskten de kurtuluyoruz.
+
+
+
+
+1:55
 
