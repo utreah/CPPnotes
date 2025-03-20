@@ -237,7 +237,118 @@ Bu sayede;
 	çalýþmasýna sebep verebilir. Private kýsmýnda tutarak bu riskten de kurtuluyoruz.
 
 
+Baþlýk(.h) dosyasýnda bildirilen fonksiyonlara external functions deniyor. 
+Class memberlarýný private region içine koyarak yapýlan information hiding zorunlu deðil. Bazý kiþiler
+	data memberlarý vs private alana koyup, public regionda set/get fonksiyonlarý yazarak eriþmeye çalýþýyor.
+	Information hiding sadece gerekli ise yapýlmalý. Gerekli deðilse yapýlmamalý. Dogma haline GETÝRME!
+
+C dilinde private/public gibi keywordler yok fakat sadece o kaynak dosyasýnda kullanýlmasýný istediðimiz
+	fonksiyon/deðiþkenleri static keywordü ile tanýmlayarak internal linkage'a ait hale getirebiliriz. Bu sayede
+	baþka kaynak dosyalarý tarafýndan kullanýlamazlar. Diðer dosyalarda kullanýlmasýný istiyor isek
+	fonksiyonlar ve deðiþkenleri baþlýk dosyasýnda extern keywordü ile bildirebiliriz.
+
+Member function ile global/free fonksiyonlar arasýnda üretilen assembly kodu açýsýndan bir farklýlýk yok.
+	Member function dil düzeyinde eklenmiþ, soyutlamayý arttýran, kodun okunmasýný ve anlaþýlmasýný arttýran bir araç.
+	Tek farklýlýklarý member functionlar class scopea sahip iken, global functionlar file(C)/namespace(CPP) scopea sahip.
+Soyutlamadan kasýt þu. attack adlý bir fonksiyonumuz olsun ve bu fonksiyon çaðrýldýðýnda diðer oyuncuya saldýrý yapýlsýn.
+typedef struct {
+	// player info
+}Player;
+void attack(Player* playerX, Player* playerY);
+int main(){
+	attack(&playerX, &playerY);
+}
+Burada hangi oyuncunun hangi oyuncuya atak yaptýðý belli deðil. Implementesyonun nasýl olduðunu bilmeye 
+	baðlýlýk çok artýyor.
+
+Eðer member function olsaydý þöyle olacaktý.
+class Player{
+	void attack(Player* player);
+};
+int main(){
+	Player playerX;
+	Player playerY;
+
+	playerX.attack(playerY); // buradan playerX'in playerY'ye saldýracaðýný anlayabiliyoruz rahatça.
+							// böyle bir soyutlama ve kod okuma kolaylýðý saðlýyor. Burada neden adresini parametreye
+							// göndermediðimizin cevabý aþaðýda.
+}
+--------------------------------------------------------------------------------------------
+Member functionlar için önemli bir özellik var. Member functionlar dot veya arrow operator ile eriþildiðinde
+	görünen parametrelerinden hariç olarak bulunduðun classtan bir pointer deðiþken alýyor. 
+
+class Eng{
+public:
+	void foo(); // non statik member function
+};
+foo fonksiyonunun görünen hiçbir parametresi yok. Fakat, member functionlarýn örtülü olarak 
+	bulunduklarý sýnýfýn pointerýný alan bir parametre deðiþkenleri var. Yani görünen 0, 
+	gerçekte en az 1 parametreleri var. void foo(Eng*); -> ayný bu þekilde Sentaks düzeyinde o pointer gözükmüyor.
+
+void Foo(Nec*);
+int main(){
+	Eng myeng;
+
+	myeng.foo(); // ben bu fonksiyonu dot operator ile çaðýrdýðýmda foo fonksiyonuna örtülü olarak
+					// myeng'in adresini yolluyorum. myeng Eng sýnýf türünden bir deðiþken. Yani foo fonksiyonu
+					// örtülü olarak foo(&myeng); þeklinde çaðrýlýyor.
+
+	Foo(&myeng); // yukarýdaki member function ile olan fark görülebilir. Burada myeng'in adresini kendim yolladým.
 
 
-1:55
+	//Eðer çaðrý o sýnýf türünden bir pointer ile yapýlýr ise o pointer türünün gösterdiði nesne gönderilecek. 
+	//Yani myeng gönderilecek
+	Eng* engptr = &myeng;
+	engptr->foo(); 
+	myeng.foo(); // yukarýdaki ile ayný.
+}
+Class scopea sahip olmasý sayesinde, eðer birden fazla sýnýfta ayný isimde fonksiyon var ise class scope sayesinde
+	o fonksiyonu çaðýran nesnenin sýnýfýnda aranýyor sadece.
+
+class A{
+public:
+	void foo();
+};
+class B{
+public:
+	void foo();
+};
+int main(){
+	A a;
+	B b;
+
+	a.foo(); // A sýnýf-türü içerisinde foo fonksiyonu aranacak. B sýnýfýndaki foo fonksiyonuna karýþmayacak bile.
+			// Eðer global namespacede olsaydý problem olacaktý.
+}
+--------------------------------------------------------------------------------------------
+Member function tanýmlamalarý nasýl yapýlýr?
+
+Classlar özel durumlar harici baþlýk dosyasýnda tanýmlanýr. Mesela, oluþturulan sýnýfýn client kod tarafýndan
+	kullanýlmasýný istemiyorsak, sýnýfý ya implementasyon dosyasýnda ya da nested type olarak tanýmlayabiliriz.
+Classý baþlýk dosyasýnda tanýmladýktan sonra tanýmýný .cpp dosyasýnda yapýyoruz.
+
+//class.h -> burada sýnýfý tanýmlýyoruz.
+
+class Person{
+public:
+	void set_person_name(const char* p);
+};
+!!! ÖNEMLÝ
+.cpp dosyasýnda tanýmýný yaptýðýmýz member function'ýn baþýna bulunduðu classýn ismi ve
+	scope resolution operatörü gelmek zorunda. Eðer yazmaz isek global/free fonksiyon tanýmlamýþ oluruz.
+//class.cpp -> 
+void Person::set_person_name(const char* p){
+	// kod
+} Bu fonksiyon tanýmý Person sýnýfýnda bulunan member function'ýn tanýmý
+
+void set_person_name(const char* p){
+	//kod
+} Bu fonksiyon tanýmý ise global namespacede tanýmlanmýþ bir fonksiyon. Ýkisi birbirinden farklý. 
+--------------------------------------------------------------------------------------------
+Buradaki notlar oluþturulan classexample.h ve classexample.cpp dosyalarýnda olacak. Önce oraya bak sonra buraya dön.
+--------------------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
 
