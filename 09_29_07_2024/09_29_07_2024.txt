@@ -1,0 +1,188 @@
+1- Member functionlar, sýnýfýn private bölgesinde bulunan data memberlara eriþebilirken
+	global fonksiyonlar eriþemez(global fonksiyonda sýnýfýn adresini alan parametre var)
+
+class myClass{
+public:
+	void func(int x); // mx ve my deðiþkenlerine eriþir
+private:
+	int mx, my;
+};
+
+void func_(myClass* p, int x); // mx ve my deðiþkenlerine eriþemez
+
+2- Scope farký. Member functionlar class scope'a sahip iken, global/free/standalone functionlar global/namespace
+	scope'a sahip. Global fonksiyonlar için name lookup kurallarý devreye girecek. Member functiona eriþmek için
+	o sýnýf türüne ait bir nesne üzerinden arrow veya dot operatörü ile eriþmemiz gerek. 
+
+3- Global fonksiyonlar ile member fonksiyonlar için kullanýlan name lookup kurallarý farklý.
+---------------------------------------------------------------------------------------
+
+			Member fonksiyonlarýn tanýmý nasýl yapýlýr?
+
+1- .cpp dosyasýnda fonksiyonun normal tanýmý yapýlýr. Normal fonksiyondan tek fark fonksiyon
+	class scopeta olduðu için fonksiyon adýnýn önüne sýnýfýn adý ve scope res. operatörü kullanýlýr.
+	<geri dönüþ türü> <sýnýf_adý>::<fonksiyon_adý_parametreleri>
+	void human::move(void){/*code*/}
+
+//myclass.h
+class myClass {
+public:
+	void set(int x, int y);
+	void ref(myClass& r);
+private:
+	int mx, my; // non-static data member
+};
+//myclass.cpp
+void myClass::set(int x, int y) {
+	mx = x; 
+	my = y;
+	/*
+		Global fonksiyonlarda name lookup çalýþma prensibi;
+		-Bulunduðu blokta ismi ara
+		-Kapsayan blok(lar)da ismi ara
+		-global namespacede ara
+		Eðer mx ve my global olarak tanýmlanmamýþsa name lookup hata verecek çünkü isimleri bulamayacak.
+		Bu fonksiyon myClass sýnýfýnýn non-static bir member function'ý olduðu için her sýnýf türünden nesnenin
+			kendine ait set fonksiyonu olacak. 
+		Ayný zamanda set myclassýn bir fonksiyonu olduðu için içerisinde kullanýlan isimlerin aramasý þu þekilde olacak;
+		-Bulunduðu blokta ismi ara
+		-Kapsayan blok(lar)ta ismi ara
+		-Sýnýfýn içerisinde ismi ara
+		-Global namespacede ara
+		Name lookup mx ve my nesnelerini ararken globalde aramadan önce, sýnýf nesnesinin içerisinde arayacak.
+		mx ve my nonstatic data member olduðu için her sýnýf türünden nesnenin kendine ait mx ve my data memberlarý olacak.
+			(bu structta kullanýlan deðiþkenler gibi iþte)
+		Member functionlar sýnýflarýn private regionunda bulunan data memberlara da eriþebiliyorlar
+
+	*/
+}
+
+int main() {
+	myClass m1, m2, m3;
+	m1.set(5, 3);
+	m2.set(2, 7);
+	m3.set(4, 8);
+	/*
+		Burada m1, m2 ve m3'ün kendine ait mx ve my nesneleri var.
+	*/
+}
+----------------------------------------------------------------------------------
+Sýnýf nesneleri globalde de tanýmlanabilir. 
+
+myClass g;
+void myClass::ref(myClass& r){
+	r.mx = r.my; // L value ref üzerinden private alandaki data memberlara eriþebiliriz.
+	Myclass x; // yerel bir sýnýf türünden nesne tanýmladýk
+	x.my = x.mx; // yerel nesne ile de eriþebiliriz
+
+	mx = my; // hiçbir þey kullanmadan da eriþebliliriz.
+
+	/*
+		Member functionlar örtülü olarak çaðrýldýklarý sýnýf türünün adresini de aldýðý için
+			private regionda bulunan tüm memberlara eriþebiliyoruz. 
+	*/
+} 
+
+----------------------------------------------------------------------------------
+Name Hiding/Masking
+int mx = 45;
+void myClass::set(int x, int y) {
+	int mx = 45;
+	/*
+		Zaten myClass içerisinde mx adlý bir data member vardý. Yerel olarak mx deðiþkenini tanýmlayarak
+		myclass içerisinde bulunan mx'i "name masking/hiding/shadowing" yapmýþ olduk. 
+		Buna raðmen sýnýf içerisindeki mx'e eriþmek istiyor isek 2 yol var.
+		1- Scope resolution operatörü
+			sýnýfismi::datamember -> myClass::mx;
+		2- 
+	*/
+	myClass::mx = mx; // atama operatörünün saðýndaki operand, local olan mx, solunda kalan ise sýnýfýn içindeki mx
+	/*
+		Block scopetaki isim class scopetaki ismi maskeleyebildiði gibi, sýnýf içindeki isim namespacedeki ismi 
+			name hiding'e maruz býrakabilir. Global namespacede bulunan nesneye eriþmek için gene scope resolution
+			ama unary prefix olan.
+
+	*/
+	myClass::mx = 33; // sýnýf nesnesinin içindeki mx'e 33 deðeri atanýyor.
+	::mx = 10; // globaldekine 10 verdik.
+	mx = 44; // yerel mx'e 44 deðeri set edildi
+
+	myClass::mx = mx + ::mx;
+}
+
+----------------------------------------------------------------------------------
+Bir member function, baþka bir member functioný çaðýrdýðýnda örtülü olarak tuttuðu pointerý
+	çaðýrdýðý member functiona veriyor.
+class testClass {
+public:
+	void foo(int x, int y);
+	void bar(int x);
+};
+void testClass::foo(int x, int y) {
+	bar(x);
+	bar(y);
+	/*
+		Burada bar fonksiyonuna foo içerisinde örtülü olarak tutulan testClass* pointerýda veriliyor.
+		Eðer derleyici bar adýnda bir nesnenin ismini block scopeta bulamaz ise globalde aramak yerine
+			class scopeta arayacak. Hem foo hem bar ayný sýnýf türünden nesnenin adresini kullanarak çaðrýlacak
+		Global namespacete bar isminde bir fonksiyon olmasý önemli deðil. Ýlk olarak class scopeta arayacaðý için
+			global function name masking'e uðrayacak.
+	*/
+	foo(x - 1, y - 1); // recursive member function call
+}
+----------------------------------------------------------------------------------
+2- inline olarak header dosyasýnda yapýlýr. Bu sayede tek bir kez tanýmlabilir ve ODR(one definition rule) çiðnenmemiþ olunur.
+#pragma once  // Tekrar tanýmlamayý önler (bu pragma her derleyicide olmayabilir derleyici özelinde bu)
+class myClass {
+public:
+    inline void set(int x, int y);  // Inline fonksiyon bildirimi
+};
+
+// Inline fonksiyon tanýmý
+inline void myClass::set(int x, int y) {
+    // Fonksiyon içeriði
+}
+----------------------------------------------------------------------------------
+1- Member functionlar overload olabilir.
+class myclass{
+public:
+	void bar(int x);
+	void bar(int x, int y);
+private:
+	void bar(int x, int y, double z);
+}; // bir fonksiyounun publci veya privateda olmasý önemli deðil. Private keywordü sadece bir region belirliyor
+	// scope deðiþtirmiyor. 
+
+2- Member functionlarýn redeclare edilmesi sentaks hatasý
+class myclass{
+public:
+	void bar(int x);
+	void bar(int x); 
+}; // sentaks hatasý, redeclaration member functionlar için yok.
+----------------------------------------------------------------------------------
+class myclass{
+public:
+	void bar(double x);
+private:
+	void bar(int x);
+};
+int main(){
+	myClass m;
+	m.bar(12); 
+	/*
+		Bu sentaks hatasý! Sebebi ise name lookup sürecinde double parametreli fonksiyonda int türünden
+			double türüne promotion var ama private bölümde olan int parametreli fonksiyon ile exact match var.
+			Bundan dolayý name lookup int parametreli fonksiyonda sonlanacak, context kontrolü yapýlacak ve SON olarak
+			access control yapýldýðýnda sentaks hatasý verecek. Çünkü int parametreli fonksiyon private region içerisinde
+			ve client kod bu bölüme eriþemez. Bundan dolayý access control safhasýnda sentaks hatasý verecek.
+	*/
+	m.bar(1.2); // bu sentaks hatasý deðil access control kýsmý baþarýlý olacak ve çalýþacak.
+}
+
+
+
+
+
+
+// Bir fonksiyon x.myClass::set(3, 5); þeklinde de çaðrýlabilir. Böyle yapýldýðýnda niteleme yapmaya gerek kalmýyor.
+46
