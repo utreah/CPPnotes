@@ -335,4 +335,107 @@ Caching mekanizmasý : Bir fonksiyon içerisinde bir deðer hesaplanýyor. Her sefer
 ----------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------
 																	THIS POINTER
-																	1:31
+This pointerý fonksiyon içerisinde kullanýldýðýnda, o fonksiyonu çaðýran sýnýf nesnesinin adresini alýyor.
+	ÖNEMLÝ! this keywordü sýnýfýn yerini deðil sýnýf nesnesinin adresini alýyor. Nesnenin kendisini kullanmak istiyor isek
+		*this þeklinde yazmamýz gerek.
+	DÝKKAT! this pointerýnýn oluþturduðu ifade PR value expression.
+
+Kullanýlamayacaðý alanlar:
+-Global bir fonksiyonun içerisinde kullanýlmasý sentaks hatasý
+-Sýnýfýn statik bir üyesinin içinde kullanýlmasý sentaks hatasý
+-Addressof operatörünün sað operandý olarak
+Yani sadece non-static üyeleri için kullanýlabilir.
+
+
+#include <iostream>
+class Myclass{
+public:
+	void func();
+	void bar();
+	void foo();
+private:
+	int mx, my, mz;
+};
+void Myclass::func(){
+	std::cout << "this = " << this << '\n';
+	//*this -> bu m deðiþkeninin kendisi.
+	//&this -> sentaks hatasý çünkü addressof operatörü L value expr istiyor. this PR value.
+	/*
+		this keywordü, name masking olduðu durumlarda da kullanýlabilir. Fakat, bu kullanýlmasý gerektiði anlamýna gelmiyor.
+		Ýlk sýrada zaten bu name masking olayýnýn olmasýný engellememiz gerekiyor. 
+		Ek olarak, scope resolution var zaten böyle bir durum için. Kullanýlmasý yanlýþ deðil ama doðru da deðil. Gereksiz kullanmaya gerek yok
+	*/
+}
+int main(){
+	Myclass m;
+	std::cout << "&m = " << &m << '\n';
+	m.func();
+}
+----------------------------------------------------------------------------------
+																		THIS KULLANIM YERLERÝ
+1- Sýnýf türünden nesnelerin adresini parametre deðiþkeni olarak alan fonksiyonlarý member function ile çaðýrmak istediðimizde
+	member functioný çaðýran sýnýf nesnesinin adresini göndermek için this kullanabiliriz.
+void fg1(Myclass* p);
+void fg2(Myclass& p);
+void Myclass::bar(){
+	fg1(this); // bar fonksiyonunu hangi nesne çaðýrýrsa çaðýrsýn, çaðýran nesnenin adresi this keywordü ile gönderilecek
+	fg2(*this); // bu referans semantiði olduðu için nesnenin kendisini gönderiyoruz. 
+}
+int main(){
+	Myclass m;
+	m.bar();
+}
+
+2- Fonksiyonu çaðýran sýnýf nesnesinin adresini döndüren üye fonksiyonlarýnda kullanýlýyor. Bu fonksiyonlarýn geri dönüþ deðeri
+	o sýnýf türünün adresi oluyor. Bunu döndürmek için this kullanýlýyor. 
+	Ayný durum referans semantiði içinde geçerli. Nesnenin adresi yerine kendisini döndürebiliriz (L value reference)
+class Myclass{
+public:
+	Myclass* foo();
+	Myclass& bar();
+}
+Myclass* Myclass::foo(){
+	//code
+	return this;
+}
+Myclass& Myclass::bar(){ // referens semantiði
+	//code
+	return *this;
+}
+
+3- Bu referans semantiði ile alaklý. Fluent API(CPP'de chaining deniyor) için this kullanýlabiliyor. Ayný zamanda
+	operator overloading oluyor bu özellikte.
+class Eng{
+public:
+	Eng& foo();
+	Eng& baz();
+	Eng& bar();
+}
+Eng& Eng::foo(){
+	return *this;
+}
+Eng& Eng::bar(){
+	return *this;
+}
+Eng& Eng::baz(){
+	return *this;
+}
+int main(){
+	Eng myeng;
+	myeng.foo().baz().bar(); // her fonksiyon L value ref döndürüyor ve birbirini çaðýrmaya devam ediyor.
+								// burada overloading var mesela. Buna chaining(CPP) ya da fluentapi.
+}
+1:59
+
+
+
+
+
+const üye fonksiyonunda this pointerý ile adres döndürülemez. This, kendisini çaðýran nesnenin adresini döndürüyor const T* türünden T* türüne
+	dönüþüm olmadýðý için sentaks hatasý verecke.
+class Eng{
+public:
+	Eng& foo()const{
+		return this; // sentaks hatasý, çaðýran nesne const T* türünde, this T* türü döndürmeye yeltenecek. Dönüþüm olmadýðý için sentaks hatasý
+	}
+}
