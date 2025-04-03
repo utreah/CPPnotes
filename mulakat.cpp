@@ -119,3 +119,10 @@ int main() {
 		}
 	*/
 }
+
+// 09_29_07_2024
+/*
+- Sýnýfýn non-static veri elemnlarý fonksiyon tarafýndan deðiþtirilmiyorsa o fonksiyon const olmalý önergesi YANLIÞ!!
+	non - static fonksiyonun const üye olup olmamasýnýn sýnýf nesnesinin veri elemanlarýyla doðrudan alakasý yok.
+	Sýnýf nesnesinin problem domainindeki anlamý ile ilgisi var.Yani eðer problem domanindeki sýnýfýn statei deðiþmiyorsa const olabilir.
+*/

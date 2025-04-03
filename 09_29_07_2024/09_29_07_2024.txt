@@ -166,6 +166,10 @@ public:
 private:
 	void bar(int x);
 };
+void myclass::bar(int x){
+	bar(x); // (bu kýsmý 189. satýrdan sonra oku) int parametreli fonksiyona çaðýracak / recursive
+	bar(static_cast<double>(x)); // double parametreli fonksiyon çaðrýlacak
+}
 int main(){
 	myClass m;
 	m.bar(12); 
@@ -179,10 +183,156 @@ int main(){
 	m.bar(1.2); // bu sentaks hatasý deðil access control kýsmý baþarýlý olacak ve çalýþacak.
 }
 
-
-
-
-
-
 // Bir fonksiyon x.myClass::set(3, 5); þeklinde de çaðrýlabilir. Böyle yapýldýðýnda niteleme yapmaya gerek kalmýyor.
-46
+----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+																CONST SEMANTÝÐÝ
+.
+void foo(Data* p);  mutator/set fonksiyonu. 
+	Mutator fonksiyonlara bakýldýðýnda, gönderilen parametre deðiþkeninin deðerinin deðiþtirilebileceði bilgisini alýyoruz.
+void bar(const Data* p); Accessor/get fonksiyon.
+	Accessor fonksiyonlarda ise gönderilen deðiþkenin sadece salt okuma(read-only) amaçla kullanýlabileceði bilgisini veriyor.
+
+	Mutator-Accessor referans semantiði içinde ayný. 
+void foo(Data& p);  mutator/set fonksiyonu. 
+void bar(const Data& p); Accessor/get fonksiyon.
+
+Const semantiði overload içinde kullanýlabilir.
+void foo(Data& p);
+void foo(const Data& p);
+Const overloading baya önemli. Bu sayede const olan ve olmayan nesne ayrý ayrý ele alýnýyor.
+	Pointer semantiði içinde geçerli bu durum.
+
+BURASI KISA BÝR TEKRARDI. Þimdiki konu çok önemli, sýnýflar ile alakalý.
+
+
+Nasýl ki global fonksiyonlarda const kullanýmý önemli ise sýnýflarýn member functionlarýnda da kullanmak önemli.
+	Eðer fonksiyon, member fonksiyon deðil global fonksiyon olsaydý þöyle gözükecekti.
+	void foo(Myclass* p); set/mutator .
+	void foo(const Myclass* p); Const keywordü var get/accessor
+
+	Bir member fonksiyonun const yapma sentaksý normalden farklý. public/private regionda tanýmlanmýþ fonksiyonun
+		parametre parantezinin yanýna const yazýlýyor.
+class Myclass{
+public:
+	void foo()const; // Bu fonksiyon accessor/get fonksiyon - const function
+	void bar();	// mutator/set - non-const function
+};
+Member fonksiyonlarý yazarken const correctness çok önemli. O yüzden member fonksiyonlarý yazarken
+
+-Sýnýfýn non-static veri elemnlarý fonksiyon tarafýndan deðiþtirilmiyorsa o fonksiyon const olmalý önergesi YANLIÞ!!
+	non-static fonksiyonun const üye olup olmamasýnýn sýnýf nesnesinin veri elemanlarýyla doðrudan alakasý yok.
+	Sýnýf nesnesinin problem domainindeki anlamý ile ilgisi var. Yani eðer problem domanindeki sýnýfýn statei deðiþmiyorsa const olabilir.
+
+
+class Fighter{
+public:
+	void cry_name();
+private
+	char* pname;
+}
+Yukarýda, Fighter için bir sýnýf oluþturuldu. cry_name fonksiyonu dövüþçünün ismini ekrana yazdýrýyor olsun.
+	Eðer sadece ekrana oyuncunun ismini yazdýrýyor, baþka bir þey yapmýyorsa bu fonksiyon const olabilir.
+	Eðer ekrana hem oyuncunun ismini yazdýrýyor hem de her oyuncunun ismi söylendiðinde güç kaybetmesine sebep oluyorsa bu fonksiyon
+		const olamaz çünkü sýnýfýn stateini deðiþtirdi. 
+	pname bellek bloðunda oyuncunun adý tutuluyor olsun. Ben pname'in gösterdiði adresi deðiþtirmedim ama adresteki ismin üzerine yazdým.
+		Bu durumda sýnýfýn data memberýnýn deðeri deðiþmemiþ oldu "o zaman ben bunu const yapayým" demek doðru deðil. Problem domaininde
+		sýnýfýn statei deðiþiyor.
+
+ÖZETLE
+-Bir fonksiyonun const olup olmamasý sýnýfýn data memberlarýnýn deðerinin deðiþip deðiþmemesi ile alakalý deðil. Problem domainindeki
+	durumun deðiþip deðiþmemesi ile alaklý.
+
+
+class Eng {
+public:
+	void foo(); // non-const
+	void bar()const; // const
+private:
+	int mx;
+	int* mp;
+};
+/*
+	Yukarýdaki foo fonksiyonlarýnýn gizli parametreleri þu þekilde
+	void foo(Eng*); //non-const
+	void bar(const Eng*)const;  // const
+*/
+void Eng::foo() {
+	mx = 5; // hiçbir hata yok
+}
+void Eng::bar()const{ // const keywordü orada olmazsa sentaks hatasý
+	mx = 5; // sentaks hatasý
+}
+Sýnýfýn const üye fonksiyonlarý, sýnýfýn non-static veri elemanlarýný deðiþtiremezler. Deðiþtirmeleri sentaks hatasý.
+	Deðiþtirememelerinin sebebi gizli parametrelerinin const T* olmasý. Const keywordünün asterisk atomunun solunda olmasý
+	iþaret edilen adresdeki nesnenin deðerinin deðiþmesini engellemesi. 
+
+
+Bir sýnýfýn const olan üye fonksiyonu, ayný sýnýfýn non-const üye fonksiyonunu çaðýramaz. 
+void Eng::foo() {
+	bar(); // Burada T* türünden const T* türüne bir dönüþüm var. Logical const oluyor. Sentaks hatasý yok
+}
+void Eng::bar()const{ 
+	foo(); // Burada const T* türünden T* türüne dönüþüm var. Sentaks hatasý var
+}
+
+Bir pointerýn nesnesinin tuttuðu adresteki nesnenin deðeri const üye fonksiyon tarafýndan deðiþtirilebilir.
+void Eng::bar()const {
+	*mp = 5; // Bu legal, deðiþtirilen deðer sýnýf nesnesinin gösterdiði adres deðil, adresi tutulan nesnenin deðeri deðiþiyor.
+}
+----------------------------------------------------------------------------------
+ÖNEMLÝ!!!
+Bu kýsým biraz karmaþýk olabilir. Diyelim ki Person problem domainimizde private regionda bulunan bir data member
+	o sýnýf içerisinde fonksiyonlarýn kaç defa çaðrýldýðýný tutacak ve ben bu deðeri istediðim bir zamanda get edebileceðim.
+	Yani her seferinde o sýnýftan bir fonksiyon çaðýrdýðýmda m_debug_count 1 artacak.
+	2 fonksiyon olsun get_name ve get_debug_count. 
+	get_name kiþinin ismini verecek bize. Sýnýf statei üzerinde hiçbir deðiþiklik yapmýyor. Ýsmini öðrenmiþ oluyoruz sadece
+		yani fonksiyon const olabilir. m_debug_count 1 artacak
+	get_debug_count fonksiyonuda ayný þekilde problem domainindeki kiþinin statei üzerinde deðiþiklik yapmayacaðý için
+		const olabilir. Bu fonksiyon çaðrýldýðýnda m_debug_count artmayacak.
+#include <string.h>
+class Person{
+public:
+	std::string get_name()const;
+	int get_debug_count()const;
+private:
+	int m_debug_count = 0;
+}
+
+std::string Person::get_name()const{
+	m_debug_count++; 
+/*
+	semantik olarak bir problem yok. Çünkü m_debug_count domain üzerinde state deðiþikliðine sebep olmayacak fakat sentaks hatasý var.
+		get_name fonksiyonu const olduðu için sýnýf içerisinde bulunan data memberlarý üzerinde
+		deðiþiklik yapamaz çünkü low-level const. Ama bu fonksiyonun const correctness açýsýndan da const olmasý gerek.
+	Bu durumun önüne geçmek için bir keyword var. MUTABLE. Eðer bir data member mutable keywordü ile tanýmlanýr ise o data memberýn
+		const fonksiyonlar ile deðiþtirilebileceðini söylüyoruz. (baþka bir iþlevi daha var ama ileride görücez)
+*/
+};	
+
+
+#include <string.h>
+class Person{
+public:
+	std::string get_name()const;
+	int get_debug_count()const;
+private:
+	mutable int m_debug_count = 0; // artýk const fonksiyonlar bu deðiþkenin deðerini deðiþtirebilecek. Çünkü derleyiciye
+									// "bu data memberýnýn deðiþmesi problem domaindeki sýnýfýn durumunu deðiþtirmiyor" bilgisini verdik.
+}
+std::string Person::get_name()const{
+	m_debug_count++; 
+}
+mutable keywordü ile tanýmlanmýþ bir data memberýn, o sýnýf nesnesinin problem domainideki karþýlýk geldiði durumla doðrudan alakasý yok.
+	Bu sayede mutable ile taýnmanmýþ nesneler üzerinde const üye fonksiyonlar deðiþiklik yapabiliyor.
+
+Caching mekanizmasý : Bir fonksiyon içerisinde bir deðer hesaplanýyor. Her seferinde bu deðeri tekrar tekrar hesaplamamak için
+	son hesaplanmýþ deðer bir deðiþkende tutuluyor. Bu deðer mutable bir nesnede tutuluyor çünkü doðrudan problem domainindeki sýnýf ile alakasý
+	yok.Caching bir kaç farklý yerde kullanýlýyor anlamsal olarak bu da bunlardan bir tanesi. 
+	Bir iþi her seferinde sýfýrdan yapmak yerine son yaptýðý iþi kaydediyor ve onu kullanýyor.
+----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+																	THIS POINTER
+																	1:31
