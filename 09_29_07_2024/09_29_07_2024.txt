@@ -343,7 +343,7 @@ This pointerý fonksiyon içerisinde kullanýldýðýnda, o fonksiyonu çaðýran sýnýf n
 Kullanýlamayacaðý alanlar:
 -Global bir fonksiyonun içerisinde kullanýlmasý sentaks hatasý
 -Sýnýfýn statik bir üyesinin içinde kullanýlmasý sentaks hatasý
--Addressof operatörünün sað operandý olarak
+-Addressof operatörünün sað operandý olarak(this pointerinin oluþturduðu ifade PR value olduðu için)
 Yani sadece non-static üyeleri için kullanýlabilir.
 
 
@@ -425,17 +425,150 @@ int main(){
 	myeng.foo().baz().bar(); // her fonksiyon L value ref döndürüyor ve birbirini çaðýrmaya devam ediyor.
 								// burada overloading var mesela. Buna chaining(CPP) ya da fluentapi.
 }
-1:59
-
-
-
-
 
 const üye fonksiyonunda this pointerý ile adres döndürülemez. This, kendisini çaðýran nesnenin adresini döndürüyor const T* türünden T* türüne
 	dönüþüm olmadýðý için sentaks hatasý verecke.
 class Eng{
 public:
-	Eng& foo()const{
+	Eng* foo()const{
 		return this; // sentaks hatasý, çaðýran nesne const T* türünde, this T* türü döndürmeye yeltenecek. Dönüþüm olmadýðý için sentaks hatasý
 	}
 }
+
+Eðer const bir fonksiyondan this ile adres döndürmek istiyor isek geri dönüþ deðeri const T* türünden olmalý.
+	Ayný durum referans semantiði içinde geçerli.
+const Eng* foo()const{
+	return this; // Sentaks hatasý yok, this const Eng* döndürecek.
+}
+
+
+const overloading(veya function overloading) member functionlar için çok sýk kullanýlýyor.
+
+class Myclass{
+public:
+	void foo();
+	void foo()const;
+}
+-Const olmayan nesneler için 449daki fonksiyon
+	Const olan nesneler için 450deki fonksiyon çalýþacak demek bu. 
+
+#include <iostream>
+#include <vector>
+
+int main() {
+	using namespace std;
+
+	vector<int> v{ 1, 4, 7, 12, 8 };
+	v.at(2) = 5;
+	auto aval = v.at(3);
+	// Burada hem vector üzerinde deðiþiklik yapabildik hem de döndürdüðü referansý bir deðiþkende tuttuk.
+	
+	const vector<int> cv{ 1, 4, 7, 12, 8 };
+	auto v1 = cv.at(3); 
+	cv.at(4) = 2; // sentaks hatasý veriyor çünkü cv vektorü const. Const overloading yüzünden const int& döndüren sýnýf fonksiyonunu
+					// çaðýrýyor. Bundan dolayý deðiþiklik yapýlamýyor vektör üzerinde. 
+}
+
+
+
+Bir fonksiyonun .cpp dosyasý ile sýnýfýn kendi içerisinde tanýmlanmasý ayný deðil.
+
+class Myclass{
+public:
+	void set1(int x){
+		mx = x;
+	}
+	void set2(int x);
+private:
+	int mx;
+}
+
+void Myclass::set2(int x){
+	mx = x; 
+}
+
+set1 ve set2 fonksiyonlarý tanýmlamalarý ayný olsa da, ayný iþlevi yapýyor olsalarda ayný deðiller.
+
+Sýnýfýn üye fonksiyonlarýnda ODR çiðnenmeme zorunluluðu var global fonksiyonlarda olduðu gibi.
+	ODR violate etmemek için fonksiyonun inline olmasý gerek. 
+Inline yapmak için bir kaç farklý yok.
+-Fonksiyonun tanýmýný bþalýk dosyasýnda yapmak. Fonksiyonu baþlýk dosyasýnda tanýmlarsak fonksiyona inline keywordünü koymamýza gerek yok.
+myclass.h
+class Myclass{
+public:
+	inline void set1(int x);
+private:
+	int mx;
+}
+inline void Myclass::set1{
+	mx = x;
+}
+------------------------------
+class Myclass{
+public:
+	void set1(int x);
+private:
+	int mx;
+}
+inline void Myclass::set1{
+	mx = x;
+}
+------------------------------
+class Myclass{
+public:
+	inline void set1(int x);
+private:
+	int mx;
+}
+void Myclass::set1{
+	mx = x;
+}
+------------------------------
+-Eðer üye fonksiyonun tanýmý sýnýf içerisinde yapýlýrsa implicit olarak inline oluyor.
+
+class Myclass{
+public:
+	void set1(int x){
+		mx = x;
+	} 
+private:
+	int mx;
+}
+inline keywordü yok ama fonksiyonun tanýmý sýnýfýn içerisinde yapýldýðý için bu bir implicit inline fonksiyon
+
+Inline expansion kullanýrken de dikkat etmek gerekiyor. Bir üye fonksiyonun kullandýðý incomplete type'ýn eðer tanýmý
+	derleyicide yok ise, ve bu tanýmý farklý bir baþlýk dosyasýnda yapmýþ isek hem client, hem biz kaynak dosyasýný include etmemiz gerekiyor.
+	Tanýmý kaynak dosyasýnda yapmýþ olsaydýk sadece kaynak dosyasýnýn include etmesi yetecekti. Bu probleme "dependency" deniyor. 
+
+----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+																SINIF NESNELERININ HAYATA BAÞLAMASI
+																SINIF NESNELERININ HAYATLARININ SONLANMASI
+.
+Bir sýnýf nesnesinin hayata baþlamasýný saðlayan, sýnýf nesnesini kullanýlabilen bir varlýk hali getiren
+	üye fonksiyonuna CONSTRUCTOR deniyor. 
+Býr sýnýf nesnesinin hayatýný bitiren üye fonksiyona da DESTRUCTOR deniyor. 
+
+1- Constructor ve destructor sýnýfýn member functionlarý. Global fonksiyon, statik üye fonksiyonu OLAMAZ!
+	Non-static member function olmalý.
+
+CONSTRUCTOR
+1- Constructor üye fonksiyonu, sýnýfýn ismi ile ayný olmalý.
+2- Constructor için geri dönüþ deðeri kavramý yok. Yani void bile yazýlmayacak.
+3- Constructor const üye fonksiyonu da olamaz. Non-const non-static olmasý gerek.
+4- Constructor overload edilebilir bir fonksiyon.
+5- Constructorlar private kýsýmda da bulunabilir. Fakat, sýnýfýn private bölgesinde bulunan fonksiyonlarýn
+	dýþarýdan eriþilmeye çalýþýlmasý sentaks hatasý. Access control kýsmýnda hata olucak
+6- .cpp dosyasýnda veya baþlýk dosyasýnda inline olarak tanýmý yapýlabilir.
+7- 
+class Eng{
+public:
+	Eng();
+	Eng(int);
+	Eng(int, int);
+	Eng(int, double);
+private:
+	Eng(double, int, char*);
+};
