@@ -436,7 +436,7 @@ public:
 }
 
 Eðer const bir fonksiyondan this ile adres döndürmek istiyor isek geri dönüþ deðeri const T* türünden olmalý.
-	Ayný durum referans semantiði içinde geçerli.
+	Ayný durum referans semantiði içinde geçerli. 
 const Eng* foo()const{
 	return this; // Sentaks hatasý yok, this const Eng* döndürecek.
 }
@@ -572,3 +572,5 @@ public:
 private:
 	Eng(double, int, char*);
 };
+
+Eng::Eng(int, double);

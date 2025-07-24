@@ -1,0 +1,251 @@
+DESTRUCTOR
+
+1-Destructor ile constructorun farký, destructor önünde tilde(~) tokený var.
+2-Bir sýnýfýn bir destructorý olur.
+3-Destructorlarýn parametre deðiþkeni OLAMAZ.
+4-Geri dönüþ deðeri kavramý yok. void bile olamaz
+
+class myClass{
+public:
+	myClass();
+	~myClass();
+}
+ 
+
+-Constructorlar hiçbir parametre deðiþkeni almadan da çaðrýlabiliyor. Bazen de default argument alarakta çaðrýlabiliyor.
+	Buna default constructor deniyor.
+class myClass{
+public:
+	myClass(); // default ctor.
+	~myClass();
+}
+ 
+																Special Member Functions
+Special member functions, belirli þartlar saðlandýðýnda derleyici tarafýndan yazýlabiliyor bu fonksiyonlar. Çok soyut bir konu.
+	to default a special member function -> bu terim fonksiyonun derleyici tarafýndan hazýrlandýðýný anlatmak için kullanýlýyor. to generate/synthesis gibi
+1-Default ctor
+2-Destructor
+3-Copy ctor
+4-Move ctor			-> modern cpp(CPP11)
+5-Copy assignment	-> modern cpp(CPP11)
+6-Move assignment
+Her constructor special member function deðildir. Sadece default, copy ve move ctor için special member function denilebilir.
+Bu konu üzerine zamanla konuþulunacak. 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+-Constructorlar ve destructorlar hem cpp hem de baþlýk dosyalarýnda tanýmlanabilir. Baþlýk dosyasýnda tanýmlanýp, bildirimi kaynak dosyasýnda yapabiliriz.
+
+//.cpp
+class myClass{
+	myClass();
+};
+
+//.h
+myClass::myClass(){
+	// kod
+}
+
+-Direkt sýnýfýn bildirimi içerisinde inline olarakta yapýlabilir.
+class myClass{
+	myClass(){
+		// kod
+	}
+};
+
+Hoca ctor. ve dtor. tanýmlarýný yazým konusunda hýz kazanmak için(derste zaman kaybýný azaltmak için) sýnýf içerisinde inline olarak tanýmlayacak.
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include <iostream>
+class myClass {
+public:
+	myClass(){
+		std::cout << "myClass default ctor this =" << this << '\n';
+		/*myClass ctoru non-static member function olduðu için this pointerýný kullanarak bu sýnýf nesnesini çaðýraný görücez*/
+	}
+	~myClass() {
+		std::cout << "myClass destructor this = " << this << '\n';
+	}
+
+};
+
+int main() {
+	std::cout << "main has just started" << '\n';
+
+
+	std::cout << "main is finishing" << '\n';
+}
+
+Burada sadece ekrana main has just started ve is finishing yazýlarý yazacak. 
+Global nesnelerin hayata gelmesi main fonksiyonunda önce oluyor.
+
+#include <iostream>
+class myClass {
+public:
+	myClass(){
+		std::cout << "myClass default ctor this =" << this << '\n';
+		/*myClass ctoru non-static member function olduðu için this pointerýný kullanarak bu sýnýf nesnesini çaðýraný görücez*/
+	}
+	~myClass() {
+		std::cout << "myClass destructor this = " << this << '\n';
+	}
+
+};
+myClass m;
+int main() {
+	std::cout << "main has just started" << '\n';
+
+
+	std::cout << "main is finishing" << '\n';
+}
+Þimdi ise ekrana sýrasý ile
+	-default ctorun yazýsý ekrana gelecek.
+	-main has just started
+	-main is finishing
+	-destructor yazýsý ekrana gelecek. 
+Bunun sebebi ise global nesnelerin hayata gelmesi main fonksiyonunun çaðrýlmasýndan önce olmasýndan dolayý. Program sonlanmadan önce de sýnýf nesnesi yok edilecek.
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+-Global nesneler hayata tanýmlanma sýrasý ile gelir. 
+#include <iostream>
+class myClass {
+public:
+	myClass(){
+		std::cout << "myClass default ctor this =" << this << '\n';
+		/*myClass ctoru non-static member function olduðu için this pointerýný kullanarak bu sýnýf nesnesini çaðýraný görücez*/
+	}
+	~myClass() {
+		std::cout << "myClass destructor this = " << this << '\n';
+	}
+
+};
+myClass m1, m2, m3;
+
+int main() {
+	std::cout << "main has just started" << '\n';
+
+
+	std::cout << "main is finishing" << '\n';
+}
+Hayata ilk olarak m1, sonra m2 sonra ise m3 gelir. Farklý sýnýf nesnelerinden olsalar dahi ilk tanýmlanann önce haya gelir.
+A a;
+B b;
+C c;
+Sýrasý ile a - b - c þeklinde hayata gelir. 
+Destructor ise tam tersi. a-b-c þeklinde hayata geldiðinde c-b-a þeklinde sonlanacak. Yani first in last out kuralý gibi. Ýlk giren son çýkýyor.
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Farklý dosyalarda bulunan global deðiþkenlerin hepsi main fonksiyonunun çaðrýlmasýndan önce hayata gelecek. Fakat hangisinin ilk olarak hayata
+	geleceðinin dil tarafýndan belirlenmiþ bir kuralý yok. 
+//cengizhan.cpp
+	C cx;
+
+//doga.cpp
+	D dx;
+
+//oguzhan.cpp
+	O ox;
+Yukarýda 3 farklý kaynak dosyasýnda 3 farklý global nesne tanýmlanmýþ. Bu nesnelerin hepsi mainden önce hayata gelecek fakat	
+	ilk olarak hangisinin geleceðinin garantisi yok. Bu olaya 'static initialization fiasco' deniyor.
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Statik Yerel Deðiþkenler: Fonksiyon içerisinde static keywordü ile tanýmlanan deðiþkenlere deniyor.
+#include <iostream>
+class myClass {
+public:
+	myClass(){
+		std::cout << "myClass default ctor this =" << this << '\n';
+		/*myClass ctoru non-static member function olduðu için this pointerýný kullanarak bu sýnýf nesnesini çaðýraný görücez*/
+	}
+	~myClass() {
+		std::cout << "myClass destructor this = " << this << '\n';
+	}
+
+};
+void func(){
+	static int cnt{};
+	std::cout << "func" << ++cnt << ". kez cagrildi" << '\n';
+	static myClass m;
+}
+int main() {
+	std::cout << "main has just started" << '\n';
+
+
+	std::cout << "main is finishing" << '\n';
+}
+1- Bu deðiþkenler fonksiyon çaðrýlmadýkça hayata gelmiyorlar. func() fonksiyonu çaðrýlmadýkça myClass türünden m nesnesi
+	hayata gelmeyecek. Bundan dolayý da ctor ve destructor çaðrýlmayacak.
+	ÖNEMLÝ!! statik yerel deðiþkenler sadece bir kere hayata geliyor. Yani func() fonksiyonunun birden fazla kez çaðrýlmasý farklý yerel statik
+		nesneler oluþturmuyor.
+2- statik yerel deðiþkenler main fonksiyonu sona erdikten sonra hayata veda eder. Yani statik sýnýf nesnesi mainin bitmesiyle destruct edilir.
+3- Otomatik ömürlü deðiþkenler fonksiyon her çaðrýldýðýnda hayata gelir ve fonksiyon sona erdiðinde sona erir. Sýnýf nesnesi otomatik ömürlü ise
+	fonksiyonda çaðrýlmasýyla construct edilecek ve fonksiyon sona erdiðinde destruct edilecek.
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+-Bir sýnýf nesnesinin adresinin bir referans/pointer nesnesinde tutulmasý 
+int main(){
+	Myclass mx;
+	Myclass& r1 = mx;
+	Myclass& r2 = r1;
+	// Burada sadece 1 kere construction çaðrýlacak. Referans veya pointerýn bir nesneye baðlanýlmasý nesne oluþturmaz. Bundan dolayý ctor iþlemi yok.
+		// L value ref veya R value ref olmasý hiçbir þeyi deðiþtirmez.
+}
+-Sýnýf dizisi için dizinin boyutu kadar ctor iþlemi yapýlýr. 0. indexten baþlayarak n'inci indexe kadar sýrayla olur bu iþlem.
+	Myclass arr[5]; // 5 defa ctor iþlemi yapýlýr arr[0]'dan baþlayarak. GARANTÝ ALTINDA 
+
+-Default constructor'ýn kullanýldýðý iki senaryo var.
+	1- Myclass m; // sýnýf nesnesini DEFAULT INIT ile tanýmlamak
+	2- Myclass m{}; // sýnýf nesnesini VALUE INIT ile tanýmlamak
+-Eðer brace init kullanýlýrsa bu sýnýf nesnesi tanýmlama deðil bildirimi oluyor.
+	1- Myclass m(); // Burada geri dönüþ deðeri Myclass olan m isminde bir fonksiyon olduðunu bildiriyor.
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+To delete a function syntax
+Bir sentaks özelliði ile fonksiyonlarý silebiliyoruz. Bu 'silme' olayý, fonksiyonun çaðrýlmasý durumunda sentaks hatasý vermesini saðlayan
+	bir özellik. Kullanýmý fonksiyon tanýmýnýn sonuna "= delete;" ekleyerek yapýlýyor.
+
+void foo(int) = delete; // foo fonksiyonu çaðrýldýðýnda sentaks hatasý verilecek.
+int main(void){
+	foo(12);
+}
+Overload edilmiþ fonksiyonlarda kullanýlmasýný istemediðimiz türün sentaks hatasý vermesini saðlamak amacýyla kullanýlabilir.
+	Bir fonksiyonun 'delete' edilmiþ olmasý onun overload edilmediði anlamýna gelmiyor. Delete edilse bile overload kümesinde halen duruyor.
+	Böyle yaparak, kullanýlmasý istenilmeyen fonksiyonlarý engelleyebiliyoruz. Eðer delete olmasaydý type conversion ile hiçbir hata olmadan baþka
+		bir fonksiyona çaðrý yapabilecekti. Böyle olunca sentaks hatasý verdi çünkü exact match.
+void bar(int) = delete;
+void bar(double);
+void bar(long);
+int main(void){
+	bar(1.2);
+	bar(44); // sentaks hatasý verecek
+}
+
+Fonksiyona delete bildirimin eklenmesi o fonksiyonu yok etmiyor. Name lookup sürecinde hala o fonksiyon bulunabilir.
+
+-Delete bildirimleri, bazý özel durumlar dýþýnda, sýnýflarýn 'special member functionlarý' için kullanýlýyor.
+
+class Eng{
+public:
+	Nec(int){};
+}
+
+int main(void){
+	Eng mx; // sentaks hatasý çünkü default ctor yok. Eðer oluþturduðumuz ctorda parametre var ise derleyici default ctor oluþturmuyor.
+				// verilen sentaks hatasý "geçerli varsayýlan constructor yok"
+}
+
+
+class Eng{
+public:
+	Nec() = delete;
+}
+
+int main(void){
+	Eng mx; // sentaks hatasý ama bu sefer sebebi default ctor olmamasý deðil default ctor'un delete edilmiþ olmasý. 
+}
+
+
+-Modern CPP ile dile yeni bir bildirim þekli daha eklendi. "default" keywordünü kullanarak derleyiciye bu fonksiyonun kodunu SEN YAZACAKSIN AMK	
+	diyoruz. DERLEYÝCÝ TARAFINDAN YAZILACAK DEMEK.
+	Default keywordü her fonksiyon için kullanýlamaz. Yukarýda dediðimiz special member functions için kullanýlabilir sadece.
+class myclass{
+	myclass() = default;
+}
+1:07
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
