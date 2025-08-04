@@ -126,3 +126,45 @@ int main() {
 	non - static fonksiyonun const üye olup olmamasýnýn sýnýf nesnesinin veri elemanlarýyla doðrudan alakasý yok.
 	Sýnýf nesnesinin problem domainindeki anlamý ile ilgisi var.Yani eðer problem domanindeki sýnýfýn statei deðiþmiyorsa const olabilir.
 */
+
+//10_31_07_2024
+-Constructor Initializer list ile hayata getirilen data memberlarýn hayata geliþ sýrasý CIL'de yazýldýklarý sýraya göre deðil
+sýnýf içerisinde bildirildikleri sýraya göre olur.
+class Eng {
+public:
+	Eng() : my(10), mx(my / 3)
+	{
+		// burada Undefined behaviour var. Bunun sebebi ise, mx my'den önce bildirildiðinden dolayý daha önce hayata geliyor. 
+			// my halen init edilmediði için garbage value tutuyor. mx'i init ederkende garbage value kullandýðýmýz için bu Tanýmsýz Davranýþ oluþturuyor.
+			// Kafa karýþýklýðýný önlemek için, bildirim sýrasý ile CIL'e yazýlan sýra ayný olmalý dedi hoca. 
+			// Mülakatlarda bu sorulabiliyormuþ. Birbirlerinin deðerlerini kullanan data memberlarýný init ederken dikkat edin dedi.
+	}
+private:
+	int mx, my;
+};
+
+5 - Eðer derleyici sýnýfýn constructorýný implicit olarak bildiriyor ise, sýnýfýn veri elemanlarýný default olarak initialize eder.
+Special member functionýn nasýl yazýlacaðý dilin kurallarý ile belirtiliyor.Yani derleyiciden derleyiciye deðiþmez.
+
+class Myclass {
+	// derleyici tarafýndan implicitly-declared bir function bildirilecek.
+private:
+	int mx, my;
+}
+
+Eðer derleyici implicitly declare ettiði bir "special member function'u" tanýmlama sürecinde dilin kurallarýný
+çiðneyen bir durum oluþursa yani sentaks hatasý oluþursa, default etmesi gereken special member function'ý delete eder.
+Mülakatlarda "bu sýnýfýn default constructorunun durumu ne?" gibi sorabiliyorlarmýþ.
+class Map {
+	// Derleyici tarafýndan implicitly-declared bir fonksiyon bildirilecek fakat bu fonksiyon sentaks hatasýna sebep olacka.
+		// çünkü int& bir l value reference ve sadece l value deðer alabilir. Default init edildiðinde garbage value verilecek
+			// yani verilen deðer r value olduðu için sentaks hatasý oluþacak ve bu yazýlan default constructor delete edilecek.
+private:
+	int& mx;
+}
+	Oluþturulan default ctor delete edildiði için burada derlerken sentaks hatasý olmayacak.Fakat, bu sýnýf türünden bir nesne oluþturur isek
+		"silinmiþ bir iþleve baþvuru" sentaks hatasý alacaðýz.
+int main()
+{
+	Map mymap; // sentaks hatasý çünkü default ctor silindi
+}
