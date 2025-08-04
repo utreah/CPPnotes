@@ -217,7 +217,7 @@ int main(void){
 
 Fonksiyona delete bildirimin eklenmesi o fonksiyonu yok etmiyor. Name lookup sürecinde hala o fonksiyon bulunabilir.
 
--Delete bildirimleri, bazý özel durumlar dýþýnda, sýnýflarýn 'special member functionlarý' için kullanýlýyor.
+-Default bildirimleri sadece ama sadece 'special member functionlarý' için kullanýlabiliyor iken delete her fonksiyon için kullanýlabilir.
 
 class Eng{
 public:
@@ -240,12 +240,348 @@ int main(void){
 }
 
 
--Modern CPP ile dile yeni bir bildirim þekli daha eklendi. "default" keywordünü kullanarak derleyiciye bu fonksiyonun kodunu SEN YAZACAKSIN AMK	
+-Modern CPP ile dile yeni bir bildirim þekli daha eklendi. "default" keywordünü kullanarak derleyiciye bu fonksiyonun kodunu SEN YAZACAKSIN	
 	diyoruz. DERLEYÝCÝ TARAFINDAN YAZILACAK DEMEK.
 	Default keywordü her fonksiyon için kullanýlamaz. Yukarýda dediðimiz special member functions için kullanýlabilir sadece.
 class myclass{
 	myclass() = default;
 }
-1:07
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+BURASI BÝRAZ SOYUT ÝLERÝDE DAHA DA DETAYLI ÖÐRENÝLECEK
+
+Modern CPP ile 6 adet special member functionlarýn dahil olduðu 3 kategori tanýtýldý.
+SMF:
+1- Default ctor
+2- Destructor
+3- Move ctor
+4- Copy ctor
+5- Move assignment
+6- Copy assignment
+
+Bu kategoriler þunlar.
+
+1- Not declared (bildirilmemiþ)
+2- User declared (programcý tarafýndan bildirilmiþ)
+3- implicitly declared (derleyici tarafýndan bildirilmiþ)
+Bu kategoriler special member functionlarýn kullanýcý tarafýndan mý, derleyici tarafýndan mý yoksa hiç bildirilmediðini
+	kategorilemek için var.
+class Eng{
+	public:
+	Eng(); // Burada Eng default ctoru kullanýcý tarafýndan bildirilmiþ. Bundan dolayý user declared.
+		Burada önemli bir þey var. Eðer user-declared kategorisinde ise ve bu fonksiyonun tanýmý yapýlmaz ise Link aþamasýnda
+			hata meydana gelecek. 
+
+	Eng() = delete; // delete keywordünün kullanýlmasý ctorun bildirimini deðiþtirmiyor. Bundan dolayý halen user-declared
+	Eng() = default; // Bildirimi user tarafýndan yapýldý gene. Kod derleyici tarafýndan yazýlacak olsa da bildirimi yapan user. 
+};
+--
+class Eng{
+	public:
+		// burada constructor function yazýlmamýþ. Yani kesinlikle user-declared deðil fakat 'not declared' da deðil. Çünkü default ctor
+			// derleyici tarafýndan yazýlacak. Bundan dolayý bu IMPLICITLY-DECLARED. 
+		// Buradaki örnekte default constructor implicitly declared(defaulted) -> alttaki metini oku anlamak için
+};
+Eski CPP'de olmayan yeni CPP ile eklenen bir durum var. Öyle durumlar var ki Derleyici, kendine vazife edinerek, user-declared bildirim olmamasýna raðmen
+bir sýnýfýn special member functionunu bildiriyor. Dilin kurallarýnýn zorlamasýyla bir special member functionunu örtülü(implicitly declared) bildiriyor.
+	Implicitly declared iki farklý þekilde olabiliyor.
+	1- Default ctoru bildiriyor ve default ediyor.
+	2- Default ctoru bildiriyor ve delete ediyor.
+
+class Eng{
+	public:
+	
+		const int mx;
+}
+int main(void){
+	Eng mx; // derlediðimizde hata verecek. 'Eng::Eng(void)': silinmiþ bir iþleve baþvurmaya çalýþýyor
+		// yani default constructor örtülü olarak bildirilmiþ ve delete edilmiþ. 
+}
+Bunu detaylý olarak 3-4 ders sonra öðrenicez. Hoca sonuçlarýnýn çok önemli olduðunu söyledi.
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Default ctorun olmasý bir zorunluluk deðil. Hatta dilin kullandýðý bazý fonksiyonlarýn default ctoru yok. 
+	Fakat bu her sýnýfýnn default ctora sahip olmamasýnýn okey olduðu anlamýna gelmiyor. Bazý araçlar kendilerini
+		çaðýran sýnýflarýn default ctrounu çaðýrýyor eðer yok ise sentaks hatasý veriyor. 
+	Kendi oluþturduðumuz sýnýfýn bir default ctoru yoksa(user-declaredten bahsetmiyoruz burada) çoðu zaman bu bir problem.
+	Ctor yok ise þüpheli bir durum bu
+class Eng {
+public:
+	Eng();
+};
+int main(void) {
+	Eng mx[10]{}; // mesela bu sentaks hatasý verilecek çünkü bu dizi için uygun bir constructor yok. 
+	std::vector<Eng> vec(10); // Bu da sentaks hatasý çünkü uygun(appropriate default ctor) constructor olmamasý.
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+										CONSTRUCTOR INITIALIZER LIST (MEMBER INITIALIZER LIST - MIL)
+KESÝNLÝKLE ÖÐRENÝLMESÝ GEREKLÝ OLAN SENTAKS
+Bir sýnýfýn non statik veri elemanlarýný init. etmeye saðlayan sentaks bu.
+
+Bir sýnýf türünden nesne hayata getirildiðinde constructor çaðrýlmadan önce sýnýfýn içerisinde bulunan veri elemanlarý da hayata gelmiþ oluyor.
+	Bundan dolayý constructor içerisinde veri elemanlarýna atanan deðerler assignment, initialiazing DEÐÝL!
+	Veri elemanlarýnýn hayata gelmesini saðlayan ise Member Initializer List.
+
+class Eng{
+	public:
+	Eng(){
+		mx = 10;
+		my = 4.4; // burada verile deðerler mx ve my deðerlerini initialize etmiyor, bu veri elemanlarýna deðer atamasý(assignment) yapýyoruz.
+			// Bunun sebebi, eðer bir sýnýfýn bodysine girildiyse içerisindeki tüm veri elemanlarý hayata gelmiþ oluyor.
+	}
+
+	private:
+		int mx;
+		double my;
+};
+
+Sýnýfýn non-static veri elemanlarýný initialize ederken ilk tercih her zaman Constructor Initializer list olmalý.
+	Eðer CIL kullanýldan veri elemanýna atama yapýlýyor ise
+	1- Sentaks hatasýdýr
+	2- Daha verimsiz kod üretilmesine sebep oluyordur
+	3- Anlamsal fark vardýr.
+	O yüzden her zaman, tek seçenek olmasa da, birinci seçenek her zaman CIL kullanýlarak init edilmesi.
+
+PEKÝ NASIL KULLANIYORUZ BUNU?
+- Altta bildirilmiþ olan constructor fonksiyonumuzun tanýmýný cpp dosyasýnda yapýcaz.
+- Klasik tanýmlama þeklinde baþlýyoruz. Constructor fonksiyonunun adýný yazdýktan sonra ':' (colon token) koyuyoruz ve devamýna init edilecek veri elemanlarýnýn
+	adýný ve alacaklarý deðerleri yazýyoruz ve köþeli parantezleri koyuyoruz.
+	ClassName::ConstructorName : variable1(val), variable2(val), variable3(val){}
+- Eðer constructorýn yaptýðý tek iþ veri elemanlarýna deðer vermek ise köþeli parantezin içini boþ býrakabiliriz fakat parantez koymak ZORUNLU.
+	Parantez koyulmaz ise sentaks hatasý. Programcýlar, constructorun tek iþlevinin deðer atamasý olduðunu belirtmek için parantezi ayný satýra koyuyorlar
+		yukarýda ve aþaðýda olduðu gib.
+
+class Eng{
+	public:
+	Eng();
+
+	private:
+		int mx;
+		int my;
+		int mz;
+};
+
+Eng::Eng() : mx(12), my(5) {} // parantez ayný satýrda çünkü baþka bir iþlevi yok ctorun.
+
+Member initializer listi kullanýrken, sýnýf içerisinde bulunan bütün veri elemanlarýný init etmemiz gerekmiyor Sadece ihtiyacýmýz olanlarý edebiliriz.
+
+non-static const veri elemanlarý default olarka init edilemediði için direkt initialize edilmek ZORUNDA. Eðer member init list ile initialize edilmez ise
+	derleyici default deðer ile init etmeye çalýþacak bu da sentaks hatasý verecek.
+class Eng{
+	public:
+	Eng();
+
+	private:
+		const int mx;
+};
+Eng::Eng(){
+	// sentaks hatasý çünkü mx default init edildi.
+}
+
+Eng::Eng() : mx(5) {
+	// sentaks hatasý yok direkt init edildi member init list ile.
+}
+L value reference veri elemaný içinde const ile ayný duruma sahip. Eðer default init edilir ise sentaks hatasý.
+
+Member initalizer önemli çünkü eðer bir sýnýf içerisinde baþka bir sýnýfa ait bir data member var ise ve default olarak init edilmiyor
+	ise sentaks hatasý oluþacak. 
+class Ers {
+public:
+	Ers(int);
+};
+
+class Eng{
+public:
+	Eng();
+private:
+	Ers test;
+};
+
+Eng::Eng() {
+
+}
+Yukarýdaki Eng ctoru sentaks hatasý verecek. Default constructor yok çünkü Ers sýnýfýnýn içerisindeki constructorda parametre var. 
+	Yukarýda 'test' adlý data member member initializer list tarafýndan init edilmediði için derleyici bunun Ers sýnýfýnýn default constructorý 
+		tarafýndan init edileceðini kabul eder fakat Ers ctrounun tanýmý olmadýðý için sentaks hatasý olacak.
+	Parametre olduðu için derleyici tarafýndan default constructor yazýlmayacak.
+	-Parametredeki inti kaldýrýrsak derleyici tarafýndan default ctor yazýlacak ve kod legal olacak.
+	-
+
+#include <iostream>
+class Eng{
+public:
+	Eng();
+	void print()const // const member function yaptýk bu fonksiyonu. Bu sayede sadece accessor/get fonksiyon olarak iþ yapacak.
+	{
+		std::cout << "mx = " << mx << "my = " << my << '\n';
+	}
+private:
+	int mx, my;
+};
+
+Eng::Eng() { // default ctor
+
+}
+int main() {
+	Eng myeng;
+	myeng.print();
+	// Burada akla ilk gelen þey "data memberlar MIL ile hayata getirilmedi default olarak init edilecek o yüzden mx ve my deðerleri garbage value tutacak"
+		Bu cevap doðru ama eksik. Eðer mülakatlarda böyle bir soru sorulursa buna verilmesi gerekilen cevap Undefined Behaviour olduðu. Çünkü
+			çöp deðerin kullanýlmasý tanýmsýz davranýþ oluþturur. 
+}
+
+Member initializer list ile init yapar iken, standarta baðlý, direct init ile uniform/brace init arasýnda anlamsal açýdan fark yok.
+	Dilin nitelemesi ile ilk deðer verilirken narrowing conversion olur ise bu sentaks hatasýna yol açacak. 
+
+	Küme parantezi veya parantez kullanýmý arasýnda anlamsan açýdan fark yok. Ama öyle yerler var ki bu kodun anlamýnýn deðiþmesine yol açabiliyor.
+		Bunlarý ileride öðrenicez. Özel durum bunlar
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+1- Constructor Initializer listi kullanmak, default ctora göre daha verimli.
+class Eng{
+public:
+	Eng() {
+		mstr = "ENGIN OGUZ"; // Burada Eng bodysi içine girmeden önce, mstr önce hayata getiriliyor daha sonra atama yapýlýyor.
+			Eðer biz bunu Constructor initializer list kullanarak yapmýþ olsaydýk direkt olarak hayata "ENGIN OGUZ" ile gelecekti.
+				Buda daha verimli bir kod. 
+	}
+private:
+	std::string mstr;
+};
+
+
+2- Constructor Initializer list ile hayata getirilen data memberlarýn hayata geliþ sýrasý CIL'de yazýldýklarý sýraya göre deðil
+	sýnýf içerisinde bildirildikleri sýraya göre olur. 
+class Eng{
+public:
+	Eng() : my(10), mx(my / 3)
+	{
+		// burada Undefined behaviour var. Bunun sebebi ise, mx my'den önce bildirildiðinden dolayý daha önce hayata geliyor. 
+			// my halen init edilmediði için garbage value tutuyor. mx'i init ederkende garbage value kullandýðýmýz için bu Tanýmsýz Davranýþ oluþturuyor.
+			// Kafa karýþýklýðýný önlemek için, bildirim sýrasý ile CIL'e yazýlan sýra ayný olmalý dedi hoca. 
+			// Mülakatlarda bu sorulabiliyormuþ. Birbirlerinin deðerlerini kullanan data memberlarýný init ederken dikkat edin dedi.
+	}
+private:
+	int mx, my;
+};
+
+3- CIL'in en çok kullanýldýðý yerlerden biri parametreli constructorlar
+Aþaðýdaki sýnýfýn harita üzerinde bir noktaya iþaret ettiðini düþün. x ve y koordinatlarýný tutuyor. 2 adet constructorýmýz var.
+	Biris x ve y deðerlerini kullanarak init yapýyor diðeri ise haritanýn (0, 0) noktasýna iþaret ediyor.
+	mx(x) yerine x(x) þeklinde de yazýlabilirdi fakat bu aþýrý kafa karýþtýrýcý olur. Parantez dýþýndaki x'i class scope içinde ararken
+		parantez içindeki x'i class scope'un içinde aramayacak fakat önermiyorum bunu.
+
+class Point{
+public:
+	Point() : mx(0), my(0) {}
+	Point(int x, int y) : mx(x), my(y){};
+private:
+	int mx, int my;
+};
+
+4- Default Member Initialization diye Modern CPP ile eklenmiþ bir araç var. Bu araç, eðer data memberlar CIL ile init edilmez ise,
+	default olarak initialize edilmesi(yani garbage value verilmesi) yerine kendilerine atanan deðeri alýyor. 
+	
+class Point{
+public:
+	Point()
+	{
+	}
+private:
+	// default member initialization
+	int mx = 0;
+	int my = 0;
+};
+	Bunun en büyük özelliði, data memberlar default member init. ile deðer aldýðýnda derleyici otomatik olarak CIL ile init edilmiþ gibi kodu kendisi ekliyor.
+		Yani yukarýdaki þekilde init edildiðinde constructor þöyle gözüküyor.
+	Point() : mx(0), my(0){}
+	Default member initte uniform veya assignment init yapýlabiliyor fakat BRACE() kullanýlamýyor. Sentaks hatasý.
+		int mx{2} -> bu ok
+		int mx(2) -> bu sentaks hatasý
+	Eðer data member default member init ile bildirildiyse ayný zamanda constructor initializer list ile de deðer verildiyse CIL'den gelen deðeri alýr.
+	Point() : mx(24), my(13){} -> constructor böyle olursa default member init ile verilen deðerler yerine CIL ile verilen deðerleri alýr.
+
+
+5-	Eðer derleyici sýnýfýn constructorýný implicit olarak bildiriyor ise, sýnýfýn veri elemanlarýný default olarak initialize eder.
+		Special member functionýn nasýl yazýlacaðý dilin kurallarý ile belirtiliyor. Yani derleyiciden derleyiciye deðiþmez.
+
+class Myclass{
+// derleyici tarafýndan implicitly-declared bir function bildirilecek.
+private:
+	int mx, my;
+}
+
+6- Eðer derleyici implicitly declare ettiði bir "special member function'u" tanýmlama sürecinde dilin kurallarýný
+	çiðneyen bir durum oluþursa yani sentaks hatasý oluþursa, default etmesi gereken special member function'ý delete eder.
+	Mülakatlarda "bu sýnýfýn default constructorunun durumu ne?" gibi sorabiliyorlarmýþ.
+class Map{
+	// Derleyici tarafýndan implicitly-declared bir fonksiyon bildirilecek fakat bu fonksiyon sentaks hatasýna sebep olacka.
+		// çünkü int& bir l value reference ve sadece l value deðer alabilir. Default init edildiðinde garbage value verilecek
+			// yani verilen deðer r value olduðu için sentaks hatasý oluþacak ve bu yazýlan default constructor delete edilecek.
+private:
+	int& mx;
+}
+	Oluþturulan default ctor delete edildiði için burada sentaks hatasý olmayacak. Fakat, bu sýnýf türünden bir nesne oluþturur isek 
+		"silinmiþ bir iþleve baþvuru" sentaks hatasý alacaðýz.
+int main()
+{
+	Map mymap; // sentaks hatasý çünkü default ctor silindi
+}
+---------
+
+class Eng{
+	Eng();
+};
+
+class Myclass{
+public:
+
+private:
+	Eng meng;
+};
+Buradaki örnekte myclass sýnýfý için yazýlan constructor delete edilecek. meng data memberý default olarak init edilmeye çalýþýlacak fakat
+	Eng constructoru private regionda olduðu için ve private constructorýn çaðrýlmasý sentaks hatasý olduðu için
+		myclass için yazýlan örtülü default ctor delete edilecek.
+		(Eðer bir sýnýfýn regionu yazýlmamýþ ise default olarak private dir.)
+	Constructor'ýn parametresi olsaydý gene ayný þekilde fonksiyon delete edilecekti.
+
+
+7 - Derleyicinin implicitly-declared ettiði constructor her zaman:
+		-NON-STATIC
+		-PUBLIC
+		-INLINE FONKSIYON.
+	User declared kullanarak private regionda da default bildirimini yapabiliriz.
+	class Eng{
+		public:
+		private:
+			Eng() = default; // Artýk public deðil private. Eðer implicitly olsaydý kesin olarak public olacaktý.
+	}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+CONSTRUCTOR VE DESTRUCTOR ÖZELLÝK
+
+1- Constructor fonksiyonlarý diðer member functionlar gibi nokta operatörü ile çaðrýlamaz. 
+	Destructor ise nokta operatörü çaðrýlabilir yani legal fakat legal olmasý doðru olduðu anlamýna gelmiyor. Sýnýf, eðer nokta operatörü ile çaðrýlmýþ
+		destructor ile yok edilir ise programýn sonuna gelindiðinde sýnýflar otomatik olarka destruct edilmeye baþlandýðýnda hali hazýrda destruct edildiði için
+		bu tanýmsýz davranýþ oluþturacak. Bu sentaksýn dilde olmasýnýn sebebi ileride öðreneceðimiz 'placement new' isimli bir operatör kullanýmýnda gerekiyor bu.
+
+class World{
+public:
+	World();
+	World(int);
+	~World();
+	void func();
+private:
+};
+int main(){
+	World myworld;
+	myworld.func(); // bu ok
+	myworld.World(); // bu sentaks hatasý
+	myworld.~World(); // bu legal ama doðru deðil. Sýnýf burada destruct edildi fakat main fonksiyonunun sonuna geldiðinde tüm sýnýflar 
+						// destruct edilmeye baþlandýðýnda bu sýnýfý tekrar destruct etmeye çalýþacak ve UB oluþacak. 
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+2:15

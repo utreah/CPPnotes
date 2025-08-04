@@ -1,27 +1,10 @@
 #include <iostream>
-class myClass {
-public:
-	myClass(){
-		std::cout << "myClass default ctor this = " << this << '\n';
-		/*myClass ctoru non-static member function olduðu için this pointerýný kullanarak bu sýnýf nesnesini çaðýraný görücez*/
-	}
-	~myClass() {
-		std::cout << "myClass destructor this = " << this << '\n';
-	}
-
+#include <string>
+class Map {
+	// Derleyici tarafýndan implicitly-declared bir fonksiyon bildirilecek fakat bu fonksiyon sentaks hatasýna sebep olacka.
+		// çünkü int& bir l value reference ve sadece l value deðer alabilir. Default init edildiðinde garbage value verilecek
+			// yani verilen deðer r value olduðu için sentaks hatasý oluþacak ve bu yazýlan default constructor delete edilecek.
+private:
+	int& mx;
 };
-void func() {
-	static int cnt{};
-	std::cout << "func " << ++cnt << ". kez cagrildi" << '\n';
-	static myClass m4;
-}
-myClass m1, m2, m3;
-int main() {
-
-	std::cout << "main has just started" << '\n';
-	func();
-	func();
-	func();
-	func();
-	std::cout << "main is finishing" << '\n';
-}
+int main(){}
