@@ -581,7 +581,88 @@ int main(){
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+														Incomplete Type -- Complete Type
+
+Bir tür belirli bir kod noktasýnda ya
+	complete type(tamamlanmýþ türler) ya da incomplete typedýr(tamamlanmamýþ türler)
+
+- Derleyici bir sýnýf olduðunun farkýnda ama sýnýfýn tanýmý yapýlmamýþ.
+	class Myclass; // forward declaration -> Bu kaynak noktasýnda Myclass sýnýfý incomplete type
+- main fonksiyonu içerisinde, sýnýf türü bildirilmemiþken bile o sýnýf türünden bir nesne oluþturulursa o da incomplete type
+	int main(){
+		class Point* ptr; // incomplete type -> class keywordü ile kullanýlmasý gerek.
+		Point mypoint; // bu sentaks hatasý, derleyici Point sýnýfýný arayacak.
+	}
+- Derleyici sýnýfýn tanýmýný görmüþ ise complete type.
+	class Myclass{};
+
+Özet ile, eðer derleyici kodda bulunduðu kýsýmdaki sýnýf nesnesinin tanýmýný görmüyor ise, kullanýlan ismin sýnýf içerisindeki yerini
+	ve görevini bilmiyor ise incomplete type denir.
+Sýnýfýn tanýmýný gördüðü anda derleyici için o complete type.
+
+Neden önemli?
+	Dilin sentaks kurallarý,  bazý durumlarda incomplete type kullanýlmasýný legal görüyor. 
+	Bazý durumlarda da o sýnýfýn kullanýlabilmesi için complete type olmasý gerekiyor.
+
+Incomplete Type'ýn Kullanýldýðý yerler.
+
+1- Tamamlanmamýþ sýnýf türünü parametre deðiþkeni, geri dönüþ deðeri gibi yerlerde kullanabiliriz.
+	class Point;
+	Point map(Point);
+	Point map(Point*);
+	Point map(Point&);
+
+2- Typedef(tür-eþ) isimlerinde kullanabiliriz.
+	class Myclass;
+	typedef Myclass* MyclassPtr; (C tarzý)
+	using MyclassPtr = Myclass*; (CPP)
+	using Type = Myclass;
+3- Incomplete type türlerden pointer deðiþkeni tanýmlayabiliriz.
+	class Eng;
+	int main(void){
+		Eng* mp = nullptr; // object pointer
+	}
+
+4- Incomplete type türleri kullanarak object oluþturulamaz.
+	class Ogz;
+	int main(void){
+		Ogz mogz; // sentaks hatasý
+	}
+
+5- Bir sýnýfýn kendi türünden elemaný olamaz. Çünkü data member incomplete type olur.
+	class Myclass{
+		Myclass m; // sentaks hatasý
+	};
+
+6- Incomplete type türler sizeof operatörünün operandý olamazlar.
+	class Eng;
+	int main(void){
+		auto sz = sizeof(Eng); // sentaks hatasý
+	}
+
+7- Incomplete type türlerle oluþturulmuþ pointer deðiþkenleri dereference edilemez.
+	class Eng;	
+	Myclass* foo();
+	int main(void){
+		Eng* mp = foo()
+		// *mp, mp->x, mp[2] arrow, derefencing, subscript operatörleri kullanýlamaz.
+	}
+
+8- void doðuþtan bir incomplete type. 
+	Bir nesnenin türü void olamaz ama bir ifadeninn türü void olabilir.
+	1- Function call.
+		void foo();
+		foo(); // bu ifadenin türü void
+	2- Bir nesneyi static cast ile void'e dönüþtürmek veya explicit type cast(C deki gibi)
+		static_cast<void>
+		(void)
+	3- Geri dönüþ deðerinin discord edilmesi.
+		(void)func();
 
 
 
-2:15
+
+
+
+
+
