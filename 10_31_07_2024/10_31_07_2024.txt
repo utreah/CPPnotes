@@ -659,7 +659,8 @@ Incomplete Type'ýn Kullanýldýðý yerler.
 	3- Geri dönüþ deðerinin discord edilmesi.
 		(void)func();
 
-
+9- Eðer bir baþlýk dosyasýnda incomplete type kullanýldýysa bunu complete type yapmaktan(bazý durumlarda) kaçýnmalýyýz.
+	Incomplete type'ý complete type yapmak(baþlýk dosyasý include ederek mesela) dependency oluþturur. Hem de compile süresini uzatabilir.
 
 
 
