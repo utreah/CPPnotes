@@ -8,22 +8,22 @@
 ## 07: Function Overload Resolution
 ## 08: Classes, Access Specifiers, ODR
 ## 09: Classes, This Pointer
-## 10: Constructors, Destructors
+## 10: Constructors, Destructors, Incomplete Complete types, Special Member functions, Constructor Initializer List
 ## 11: Copy Constructor
 ## 12: Move Constructor, Table for Constructors
 ## 13: Copy Elision, RVO, Conversion Constructor, Delegating Constructor, Temporary Objects
 ## 14: Friend Declaration, Operator Overloading (Till 17), Dynamic Objects
 ## 18: Named Constructor Idiom, Static Keyword, Singleton Pattern, Namespace, Nested Namespace, Using Declaration
 ## 19: Using Namespace Directive, Argument Dependent Lookup (ADL), Unnamed Namespace, Inline Namespace, Namespace Alias, Nested Types
-## 20: Nested Types, Pimpl (Pointer Implementation) Idiom, Composition › Aggregation › Association, Has-a Relationship, Is-a Relationship, Dynamic Array, String Class, Small String Optimization
+## 20: Nested Types, Pimpl (Pointer Implementation) Idiom, Composition â€º Aggregation â€º Association, Has-a Relationship, Is-a Relationship, Dynamic Array, String Class, Small String Optimization
 ## 21: String in Parametric Template Patterns, Arguments and Interpretation Introduction, Moved From State, String Constructors, Initializer List, String::npos, Capacity
 ## 22: Insert, Resize, Erase, Pop_back, Find (find, rfind, find_first_of, find_last_of, find_first_not_of, find_last_not_of), Starts_with, Ends_with, Contains, Reverse, Remove, Sort, Remove-Ease Idiom, C_str, Data, Swap, Shrink_to_fit, Replace, Substr, Getline, Stoi, To_string, Copy, Puts
 ## 23: Inheritance (Public, Private, Protected) Introduction, Access Control in Inheritance, Upcasting, Object Slicing
 ## 24: Inherited Constructor, Polymorphic Class, Abstract and Concrete Class, Virtual and Pure Virtual Function, Override, Virtual Dispatch (+ Ctor and Dtor Exceptions), Virtual Constructor Idiom
 ## 25: Vptr (Virtual Function Table Pointer), Vtable, RTTI (Runtime Type Identification), Variant Return Type, Covariance, Downcasting Errors, Virtual Destructor, NVI (Non-Virtual Interface Idiom), Final (Final Class, Final Override), Private Inheritance, Private Inheritance vs Containment, Restricted Polymorphism, Protected Inheritance
-## 26: Multiple Inheritance, Diamond Formation (DDD – Dreadful (Deathful) Diamond of Derivation), Virtual Inheritance, RTTI (Runtime Type Identification), Downcasting, Dynamic_Cast, Typeid, std::type_info, Sidecast
+## 26: Multiple Inheritance, Diamond Formation (DDD â€“ Dreadful (Deathful) Diamond of Derivation), Virtual Inheritance, RTTI (Runtime Type Identification), Downcasting, Dynamic_Cast, Typeid, std::type_info, Sidecast
 ## 27: Type_id, Exception Handling, Traditional Error Handling, Terminate (Abort, Set_Terminate, Get_Terminate)
-## 28: Std::Exception, Catch All (…), Translating and Rethrowing Exception, Basic Exception Guarantee, Strong Exception Guarantee, Nofail (Nothrow) Guarantee, Stack Unwinding, Function Try Block, Exception Relation Between Constructor and Destructor, Noexcept Specifier (Nothrow Guarantee or Nofail Guarantee), Noexcept Operator
+## 28: Std::Exception, Catch All (â€¦), Translating and Rethrowing Exception, Basic Exception Guarantee, Strong Exception Guarantee, Nofail (Nothrow) Guarantee, Stack Unwinding, Function Try Block, Exception Relation Between Constructor and Destructor, Noexcept Specifier (Nothrow Guarantee or Nofail Guarantee), Noexcept Operator
 ## 29: Noexcept, SOLID ("Require No More Promise No Less"), Noexcept Relation with Optimization (Move and Copy Ctor), std::exception_ptr, Polymorphic Exception Idiom, Exception Dispatcher Idiom, Nested Exception, Introduction to Generic Programming, Template, Template Parameters (Type Parameter, Non-Type Parameter, Template Parameter), Template Argument, Deduction and Explicit Syntax Types, CTAD (Class Template Argument Deduction)
 ## 30: Specialization, Template Argument Deduction, Explicit Template Argument, Default Template Argument, Trailing Return Type, Partial Ordering Rules
 ## 31: Template Instantiation, Template Functions with Auto Keyword, Auto Return Type, Class Templates
