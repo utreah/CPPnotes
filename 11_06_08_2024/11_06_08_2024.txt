@@ -1,0 +1,236 @@
+Special Member Functionlarýn en önemli özelliði, belirli þartlar oluþtuðunda kodlarý örtülü olarak derleyici tarafýndan yazýlabiliyor.			
+////////////////////////////////////////////////////////////////////////////////////////////
+
+													COPY CONSTRUCTOR
+1-) Baþka bir sýnýf nesnesinin deðerini kullanarak bir sýnýf nesnesinin kopyalanma yoluyla hayata gelmesi.
+		Ya da bir nesneye baþka bir nesnenin deðerini atýyoruz. Bu durumda 2 sonuç doðuyor.
+		1- Bu nesneler birbirinden baðýmsýz yani bundan sonraki bu nesnelerin biri üzerinde yapýlan iþlemler diðerini etkilemeyecek.
+		2- Bu nesneler karþýlaþtýrýlabilir nesneler ise(equality comparable) bu nesneler eþit olacak yani true deðer verecek. 
+
+class Myclass{};
+int main(void){
+	Myclass m1;
+	Myclass m2(m1); // burada m2 sýnýf nesnesi hayata m1'in state'i, deðeri ne ise m2 de öyle olsun diyoruz. Copy constructor çaðýrýlacak 
+}
+
+Rule Of Zero: Eðer gereklilik yok ise sýnýfýn special member functionlarýnýn derleyici tarafýndan yazýlmasýna izin verilmesi gerektiðini
+	anlatan kural. Constructorlarý kendimiz de yazabiliriz buna bir engel yok fakat eðer kendimiz yazýyor isek bunun gerekli olmasý gerek.
+		Diðer türlü derleyici, dilin kurallarýna uyarak bizim için bu kodu yazýyor zaten.(Default ctor bu kuralýn hem dýþýnda hem de dahil)
+
+2-) Derleyici tarafýndan örtülü olarak yazýlan copy constructor:
+		-Public: Yani client kod tarafýndan çaðrýlabilir
+		-Non static
+		-Inline: Constructorun tanýmýný sýnýfýn içerisinde yapýyor. Bir .h dosyasýný include ettiðimiz zaman derleyicinin bu sýnýfýn
+			constructorýnýn tanýmýný görüyor olarak düþünmemiz gerek.
+
+3-) Yazýlan copy constructorýn;
+		-Diðer constructorlarda olduðu gibi geri dönüþ deðeri yok. void bile yazamayýz
+		-Constructorýn parametre deðiþkeni const ClassName&r türünden. Yani const L value reference türünden. Sonuçta o parametreye baþka sýnýf türünden
+			nesnenin referansý verilecek ki kopyalama iþlemi yapýlabilsin.
+			class Eng{
+				public:
+					Eng(const Eng&r);
+			};
+4-) Copy constructor sýnýfýn data memberlarýna kopyalama iþlemini, kopyalandýðý sýnýfýn data memberlarýnýn deðerlerinden alýr.
+	A B C bir tür olmak üzere
+
+class Myclass{
+public: 
+	Myclass(const Myclass &r) : ax(r.ax), bx(r.bx), cx(r.cx) {}
+private:
+	A ax;
+	B bx;
+	C cx;
+	// ax,bx,cx öðeleri deðerlerini, kopyalandýklarý sýnýf nesnesinin tuttuðu deðerleri alarak hayata geldi.
+};
+////////////////////////////////////////////////////////////////////////////////////////////
+												COPY CONSTRUCTOR KULLANIM ALANLARI
+Copy constructor üç yerde kullanýlýyor. 
+	1- Bir sýnýf türünden nesneden ayný sýnýf türünden baþka bir nesneye kopyalama yaparken.
+
+#include <iostream>
+class Date {
+public:
+	Date(int d, int m, int y) : md(d), mm(m), my(y) 
+	{
+		std::cout << "Date(int, int, int) constructor called this = " << this << '\n';
+	}
+	~Date() 
+	{
+		std::cout << "~Date() this = " << this << '\n';
+	}
+private:
+	int md, mm, my;
+};
+
+
+int main() {
+	Date d1(12, 4, 1998);
+	Date d2(d1);
+}
+Yukarýdaki örnekte ekrana 1 adet constructordan 2 adette destructordan yazý yazýlacak. 1 tane yazýlmasýnýn sebebi d1'i default constructor ile
+	hayata getirirken d2'nin kodu derleyici tarafýndan yazýlmýþ copy constructor ile olmasýndan dolayý. 
+
+Date(int, int, int) constructor called this = 00000015818FF928
+~Date() this = 00000015818FF958
+~Date() this = 00000015818FF928
+
+Aþaðýda copy constructorun kodunu da ekledim. Aradaki farký görebilmek için
+#include <iostream>
+class Date {
+public:
+	Date(const Date& d) : md(d.md), mm(d.mm), my(d.my) 
+	{
+		std::cout << "Date(const Date&) Copy constructor called this = " << this << '\n';
+	}
+	Date(int d, int m, int y) : md(d), mm(m), my(y) 
+	{
+		std::cout << "Date(int, int, int) constructor called this = " << this << '\n';
+	}
+	~Date() 
+	{
+		std::cout << "~Date() this = " << this << '\n';
+	}
+private:
+	int md, mm, my;
+};
+
+
+int main() {
+	Date d1(12, 4, 1998);
+	Date d2(d1);
+}
+Date(int, int, int) constructor called this = 000000D5F2CFF678
+Date(const Date&) Copy constructor called this = 000000D5F2CFF6A8
+~Date() this = 000000D5F2CFF6A8
+~Date() this = 000000D5F2CFF678
+
+
+Bütün constructorlar, special member function olsun olmasýn overloaddur. Mesela yukarýda d1 için default ctor kullanýlýr iken
+	d2 için copy constructor kullanýlýyor. 
+
+////////////////////////////////////////////////////////////////////////////////////////////
+2- Fonksiyon parametrelerinde sýnýf türünden bir nesneyi alýyorsa orada kullanýlýyor.
+
+#include <iostream>
+class Myclass {
+public:
+	Myclass() {
+		std::cout << "Default ctor\n";
+	}
+	~Myclass() {
+		std::cout << "Destructor\n";
+	}
+};
+
+void func(Myclass m) {};
+
+int main() {
+	Myclass m1;
+	func(m1);
+}
+Burada m1 öðesi, fonksiyonun parametre deðiþkeni olan m öðesine copy constructor ile kopyalanacak.
+Copy constructorýn parametresi const L value reference olduðu için L value, R value, const veya const olmayan nesneleri alabiliyor.
+	Derleyici bu ifadeler için arka planda bir deðiþken oluþturup orada tutuyor.
+class Date {
+public:
+	Date(const Date& d) : md(d.md), mm(d.mm), my(d.my) 
+	{
+		std::cout << "Date(const Date&) Copy constructor called this = " << this << '\n';
+	}
+	~Date() 
+	{
+		std::cout << "~Date() this = " << this << '\n';
+	}
+private:
+	int md, mm, my;
+};
+
+int main(){
+	Date dx{4, 5, 2022};
+	Date dy = Date{5, 6, 1995}; // Atama operatörünün saðýndaki ifade r value expression olmasýna raðmen
+									// copy constructorýn const L value ref olmasýndan dolayý hiçbir problem olmadan kopyalama iþlemini yapýyor.
+}
+////////////////////////////////////////////////////////////////////////////////////////////
+3- Bir fonksiyonun geri dönüþ deðerinin bir sýnýf türünden olmasý. Geri dönüþ deðerini tutacak nesne için copy constructor çaðýrýlacak.
+
+class Myclass {};
+Myclass g;
+Myclass foo(){
+	return g; 
+}
+////////////////////////////////////////////////////////////////////////////////////////////
+												HANGI SENARYOLARDA COPY CONSTRUCTORU BÝZ YAZMALIYIZ?
+
+1- Bazý sýnýflar kaynak(resources) kullanýyor. Dinamik olarak allocate edilmiþ bir bellek gibi. 
+	Bu belleklere de bir handle(o adresi gösteren bir pointer/referans) olmak zorunda yoksa o belleðe eriþemeyiz. 
+	Copy constructor ile kopyalama iþlevi yapýldýðýnda bütün deðerler ayný olacak. Buna handleda dahil. Yani bu demek oluyor ki kopyalanma iþleminin
+		yapýldýðý sýnýf nesnesi üzerinden yapýlacak herhangi bir deðiþiklik orijinal öðeninde deðerini deðiþtirecek. Copy constructor için kopyalama iþleminden
+			sonra iki öðeninde birbirinden baðýmsýz olduðunu söylemiþtik. Bu durumun önüne geçmek için copy constructorý kendimiz yazmamýz gerekiyor.
+
+#include <iostream>
+class String {
+public:
+	String(const char*);
+private:
+	char* mp; // yazýnýn adresinin tutulduðu handle
+	std::size_t mlen; // yazýnýn boyutunun tutulduðu data member
+};
+
+int main() {
+	String str("bugun sinifin ozel fonksiyonlarini isliyoruz");
+
+	String str2 = str; // buradaki örnekte str öðesi str2ye kopyalanýyor. Handleda kopyalandýðý için str2 üzerinden belleðe eriþerek yaptýðým
+						// her deðiþiklik str öðesini de etkiliyor burada.
+}
+
+String için gerekli alanýn ayrýlmasý için constructorda memory allocation iþlemini yaparken, bu sýnýfla iþimiz bittiðinde ayný þekilde
+	allocate ettiðimiz belleði free etmemiz gerekiyor. Bunu da destructor içinde yapacaðýz. Buna RAII idiomu deniyor. 
+Resource Acquisition Is Initialization(RAII)
+
+Eðer copy constructorý derleyiciye yazdýrýp, destructor içerisinde bu belleðe free edersek, bu free edilmiþ bellek bloðunun kullanýlmasý
+	tanýmsýz davranýþ oluþturacak.
+
+class String {
+public:
+	String(const char*);
+	~String()
+	{
+		if(mp)
+			std::free(mp); 
+	}
+private:
+	char* mp; // yazýnýn adresinin tutulduðu handle
+	std::size_t mlen; // yazýnýn boyutunun tutulduðu data member
+};
+void func(String s){
+	// burada copy construct ile member to member copy olacak. Fonksiyondan çýkýldýðýnda ise s için destruct çaðrýlacak.
+	// s için destruct çaðrýldýðnýda mp free edileceðinden ve str nesnesi hala hayatta olduðundan dolayý mp artýk bir dangling pointer olacak.
+}
+						
+
+int main(){
+	String str("bugun sinifin ozel fonksiyonlarini isliyoruz");
+
+	func(str);
+}
+Bunun önüne geçmek içinde copy constructoru kendimiz yazacaðýz. Kopyalama iþlemini yaparken yeni bir memory allocate edilecek ve kopyalama iþlemi
+	o adrese yapýlacak. Handle ise bu adresi tutacak.
+
+Member to member, yani kaynaktan gelen bütün bilgilerin öðe öðe kopyalanmasý, kaynaðýn tuttuðu adresi göstermesi gibi kopyalama iþleminin
+	yapýlmasýna 'Shallow(sýð) Copy' veya Memberwise Copy deniyor. Yukarýdaki problemi açýklamak için bir terim bu. 
+Kopyalama iþlemi yaparken ana kaynaðýn adreslerini tutmak yerine ona yeni adres allocate edilmesine ise 'Deep(derin) Copy' deniyor
+	Bu iki terim de standart tarafýndan belirlenmiþ terimler deðil.
+
+1:29
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
