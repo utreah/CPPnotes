@@ -221,13 +221,330 @@ Member to member, yani kaynaktan gelen bütün bilgilerin öðe öðe kopyalanmasý, ka
 	yapýlmasýna 'Shallow(sýð) Copy' veya Memberwise Copy deniyor. Yukarýdaki problemi açýklamak için bir terim bu. 
 Kopyalama iþlemi yaparken ana kaynaðýn adreslerini tutmak yerine ona yeni adres allocate edilmesine ise 'Deep(derin) Copy' deniyor
 	Bu iki terim de standart tarafýndan belirlenmiþ terimler deðil.
-
-1:29
-
-
 ////////////////////////////////////////////////////////////////////////////////////////////
+#define _CRT_SECURE_NO_WARNINGS
+#include <iostream>
+#include <cstdlib>
+#include <cstring>
+class String {
+public:
+	String(const char* p) : mlen(std::strlen(p))
+	{
+		mp = static_cast<char*>(std::malloc(mlen + 1));
+		if (!mp) {
+			std::cerr << ("cannot allocate memory\n");
+			std::exit(EXIT_FAILURE);
+		}
+		strcpy(mp, p);
+	}
+	~String()
+	{
+		if (mp)
+			std::free(mp);
+	}
+	std::size_t length()const
+	{
+		return mlen;
+	}
+	void print()const
+	{
+		std::cout << '[' << mp << ']' << '\n';
+	}
+private:
+	std::size_t mlen; 
+	char* mp; 
+};
+void foo(String s)
+{
+	std::cout << "foo cagrildi \n";
+	s.print();
+	(void)std::getchar();
+}
+int main() {
+	String str("bugun sinifin ozel fonksiyonlarini isliyoruz");
+
+	str.print();
+
+	foo(str); // fonksiyonu çaðýrdýðýmýzda copy constructor ile beraber str nesnesinin tuttuðu yazýnýn adresi parametre deðiþkeni olan
+				// s'ye kopyalanacak. 261. satýrdaki getchar input aldýðýnda fonksiyondan çýkýlmasýyla beraber s parametre deðiþkeni için destructor çaðrýlacak
+				// ve strden gelen adres destructor içinde free edilece. str nesnesi halen hayatta olduðu için artýk dangling pointer tutuyor. 
+				// program akýþýnýn sonuna geldiðinde str içinde destructor çaðrýlacak ve destructor bir dangling pointerý free etmeye çalýþacak.
+				// Ýþte bu yüzden bu gibi durumlarýn önüne geçmek için copy constructorý kendimiz yazmamýz gerekiyor. 
+
+	str.print();
+}
+ String (const String& other) : mlen(other.mlen), mp(other.mp) {} -> derleyicinin yazdýðý copy constructor böyle gözüküyor shallow/memberwise copy
 ////////////////////////////////////////////////////////////////////////////////////////////
+Copy constructorda kod tekrarý yapýlýyor ama bu örnek için takma kafaya.
+Ýlk olarak yazýnýn uzunluðu + 1(null karakteri) için bellek alaný allocate ediyoruz. Allocate edilen bu bellek alanýna
+	referansýný aldýðýmýz sýnýf nesnesinin içerisindeki adreste tutulan yazýyý allocate ettiðimiz belleðe kopyalýyoruz.
+	Bu sayede artýk yazý üstünde yaptýðýmýz deðiþiklikler kaynakta tutulan yazý veya bellek üzerinde deðiþiklik yapmýyor.
+class String {
+public:
+	String(const String& other) : mlen(other.mlen) // eðer burada mlen'i MIL ile hayata getirmeseydik derleyici otomatik olarak default initialization yapacaktý
+	{
+		mp = static_cast<char*>(std::malloc(mlen + 1));
+		if (!mp) {
+			std::cerr << ("cannot allocate memory\n");
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, other.mp); // other.mp kopyalama iþlemi yaptýðýmýz sýnýf nesnesinden deðiþkenin referansýný kullanarak adreste tutulan yazýyý
+									// yeni adrese kopyalýyoruz.
+	}
+	String(const char* p) : mlen(std::strlen(p))
+	{
+		mp = static_cast<char*>(std::malloc(mlen + 1));
+		if (!mp) {
+			std::cerr << ("cannot allocate memory\n");
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, p);
+	}
+	~String()
+	{
+		if (mp)
+			std::free(mp);
+	}
+	std::size_t length()const
+	{
+		return mlen;
+	}
+	void print()const
+	{
+		std::cout << '[' << mp << ']' << '\n';
+	}
+private:
+	std::size_t mlen; 
+	char* mp; 
+};
+
+
+Copy constructorýn kodunun bizim tarafýmýzdan yazýlmasý oran olarak %1-2 falan. Yani her zaman copy constructorý biz yazýyoruz
+	gibi bir algý olmasýn.
 ////////////////////////////////////////////////////////////////////////////////////////////
+																	COPY ASSIGNMENT
+yukarýdaki string sýnýfý kullanýlýyor bu örnekte
+int main() {
+	String str("bugun sinifin ozel fonksiyonlarini isliyoruz");
+
+	str.print();
+	if (str.length() > 10) {
+		String sx("Ben blok icerisinde kullanilacak bir yaziyim");
+		sx.print();
+		sx = str; // burada yapýlan atama iþlemi operator overloadingden dolayý bir fonksiyon çaðrý iþlemi yapýyor.
+					// operator overloading yapýlýrken operator keywordü ve operatörün kendisi gelir örneðinn -> operator=(param2) -> operator assign 
+						// bu çaðrýlan fonksiyona assign operator function deniyor. Bu operator loading konusunu ileride görücez
+					// bu yapýlan assignmenttan dolayý burada undefined behaviour var. Derleyici tarafýndan implicitly-declared olarak bir copy assignment
+					// kodu yazýlýyor. 
+		sx.print();
+		(void)getchar();
+	}
+	str.print();
+}
+Sýnýfýn Copy assignment olmak zorunda. Olmazsa olmuyor. Ya biz yazýcaz ya da derleyici
+Copy assignment'ýn constructorlardan farklý olarak geri dönüþ deðeri var. Döndürdüðü deðer L value reference
+	Aldýðý parametre deðiþkeni ise const Myclass& 
+	Constructor Initializator List copy assignment için kullanýlamaz.
+
+class1.operator=(class2) ile class1 = class2 arasýnda hiçbir fark yok. Burada operator loadingten faydalanýlýyor.
+
+class Myclass{
+public: 
+	Myclass(const Myclass &r) : ax(r.ax), bx(r.bx), cx(r.cx) {}
+	Myclass& operator=(const Myclass& r){
+		ax = r.ax;
+		bx = r.bx;
+		cx = r.cx;
+		// ax, bx, cx elemanlarý eðer primitive türler ise direkt olarak kopyalama iþlemi olacak. Sýnýf türünden nesneler ise
+			// shallow copy olacaðýndan dolayý resmen bire bir kopyalama yapýlacak. Bu da HANDLE sistemi üzerinde probleme yol açýyor. 
+			// yukarýda var notu zaten bunun dangling pointere dönüþme olayý. 
+			// Burada diðer sýnýf türlerinden kopyalama iþlemi için copy constructor deðil copy assignment çaðrýlacak.
+
+		return *this; // Kopyalama iþleminin yapýldýðý sýnýfý döndürüyoruz
+	}
+private:
+	A ax;
+	B bx;
+	C cx;
+};
+
+#include <iostream>
+class Myclass {
+public:
+	Myclass& set(int);
+	void print()const;
+};
+  
+int main() {
+	Myclass m1, m2;
+
+	m1.operator=(m2).set(44).print();
+	(m1 = m2).set(45).print();
+	/*
+		Yukarýdaki iki þeyde ayný anlama geliyor. Atama operatörünün geri dönüþ deðeri sýnýf türünden L value ref.
+	*/
+}
+
+	
+Copy constructorda hayata gelme iþlemi(initialization) yapýlýrken, copy assignmentta hali hazýrda hayatta olan nesneye atama iþlemi yapýlýr.
+	Bundan dolayý copy assignment hem deep copy iþlemi(copy constructor) hem de resource release(destructor) iþlemini yapmak zorunda. 
+	Ýlk olarak initialize edilmiþ bellek bloðunu free etmemiz gerek. Daha sonra da bellek bloðu allocate edilir ve kopyalama iþlemi yapýlrý. 
+Aþaðýdaki kod, yukarýda copy assignment baþýnda verdiðimiz örnekte yaþanýlan problemi çözüyor. 
+
+#define _CRT_SECURE_NO_WARNINGS
+#include <iostream>
+#include <cstdlib>
+#include <cstring>
+class String {
+public:
+	String& operator=(const String& other) 
+	{
+		mlen = other.length();
+		std::free(mp);
+		mp = static_cast<char*>(std::malloc(mlen + 1));
+		if (!mp) {
+			std::cerr << ("cannot allocate memory\n");
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, other.mp); 
+		return *this;
+	}
+	String(const String& other) : mlen(other.mlen) // eðer burada mlen'i MIL ile hayata getirmeseydik derleyici otomatik olarak default initialization yapacaktý
+	{
+		mp = static_cast<char*>(std::malloc(mlen + 1));
+		if (!mp) {
+			std::cerr << ("cannot allocate memory\n");
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, other.mp); // other.mp kopyalama iþlemi yaptýðýmýz sýnýf nesnesinden deðiþkenin referansýný kullanarak adreste tutulan yazýyý
+		// yeni adrese kopyalýyoruz.
+	}
+	String(const char* p) : mlen(std::strlen(p))
+	{
+		mp = static_cast<char*>(std::malloc(mlen + 1));
+		if (!mp) {
+			std::cerr << ("cannot allocate memory\n");
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, p);
+	}
+	~String()
+	{
+		if (mp)
+			std::free(mp);
+	}
+	std::size_t length()const
+	{
+		return mlen;
+	}
+	void print()const
+	{
+		std::cout << '[' << mp << ']' << '\n';
+	}
+private:
+	std::size_t mlen;
+	char* mp;
+};
+  
+int main() {
+	String str("bugun sinifin ozel fonksiyonlarini isliyoruz");
+
+	str.print();
+	if (str.length() > 10) {
+		String sx("Ben blok icerisinde kullanilacak bir yaziyim");
+		sx.print();
+		sx = str;
+		sx.print();
+		(void)getchar();
+	}
+	str.print();
+}
+
+!!!!! Yukarýdaki sýnýf için bir tane daha deficit var. Self-assignment olmasý durumunda gene Undefined behaviour oluyor.
+
+int main(void){
+	int x = 10;
+
+	x = x; // sentaks olarak hatalý deðil hatta buna self assignment deniyor. Bu iþlem sonucunda x'in deðeri deðiþmeyecek.
+}
+Fakat, HANDLE sistemine sahip sýnýf nesnelerinde self-assignment yapýldýðýnda devreye giren araç copy assignment.
+	Copy assignment içerisinde hem deep copy hem de resourse release yapýldýðýndan dolayý, eski adres free edilecek
+		ve yeni bir bellek bloðu allocate edilecek. Bundan dolayý da eski adreste tutulan bilgi kaybolucak. 
+Self-assignmenttan kaynaklý problemin önüne geçmek için adresleri kontrol edicez. Eðer atama operatörünün sol tarafý ile sað tarafýndaki operandýn
+	adresleri ayný ise bu ayný nesne demektir. Kontrolü yapmak içinde this pointeri kullanýcaz. this pointeri
+	kopyalama iþleminin yapýldýðý sýnýf nesnesinin adresini döndürüyor. sað tarafý için ise parametre deðiþkeni olarak yollanan sýnýf nesnesinin
+		adresini alarak yapýcaz. Örneðin
+		this == &class1;
+
+class String {
+public:
+	String& operator=(const String& other) 
+	{
+		if(this == &other) // eðer bu true dönerse self-assignemnt var demek.
+			return *this;
+		mlen = other.length();
+		std::free(mp);
+		mp = static_cast<char*>(std::malloc(mlen + 1));
+		if (!mp) {
+			std::cerr << ("cannot allocate memory\n");
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, other.mp); 
+		return *this;
+	}
+	String(const String& other) : mlen(other.mlen) // eðer burada mlen'i MIL ile hayata getirmeseydik derleyici otomatik olarak default initialization yapacaktý
+	{
+		mp = static_cast<char*>(std::malloc(mlen + 1));
+		if (!mp) {
+			std::cerr << ("cannot allocate memory\n");
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, other.mp); // other.mp kopyalama iþlemi yaptýðýmýz sýnýf nesnesinden deðiþkenin referansýný kullanarak adreste tutulan yazýyý
+		// yeni adrese kopyalýyoruz.
+	}
+	String(const char* p) : mlen(std::strlen(p))
+	{
+		mp = static_cast<char*>(std::malloc(mlen + 1));
+		if (!mp) {
+			std::cerr << ("cannot allocate memory\n");
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, p);
+	}
+	~String()
+	{
+		if (mp)
+			std::free(mp);
+	}
+	std::size_t length()const
+	{
+		return mlen;
+	}
+	void print()const
+	{
+		std::cout << '[' << mp << ']' << '\n';
+	}
+private:
+	std::size_t mlen;
+	char* mp;
+};
+
+Self-assignment'a karþý önlem alma sebebimiz salaklarýn x = x yapmasýndan dolayý deðil.
+
+void func(Myclass* m1, Myclass* m2)
+{
+	*m1 = *m2; // Eðer bu fonksiyonun parametrelerinin ikisine de yanlýþlýkla ayný sýnýf nesnesi geçilirse burada UB olacak.
+}
+Veya bir fonksiyon bir sýnýfýn adresini döndürüyor ve bu sýnýfýn adresini iki kere yanlýþlýkla kullanýrsak bu da UB'ye sebep olacak.
+Bu tarz durumlarýn önüne geçmek, self-assignmenttan doðacak hatalarý engellemek için o kontrolü yapýyoruz.
+
+
+
+ÖZETLE
+Copy constructor deep copy iþlemini yaparken, Copy assignment hem deep copy hem de resource release yapar.
+Copy constructor aldýðý sýnýf nesnesine initialization iþlemi yaparken, copy assignmenta gelen sýnýf nesnesi hali hazýrda init. edilmiþtir.
+Copy assignmentta, self-assignment için kontrol yapýlmasý gerekiliyor, yapýlmaz ise UB'ye yol açýyor.
+
 
 
 
