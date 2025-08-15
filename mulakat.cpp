@@ -168,3 +168,23 @@ int main()
 {
 	Map mymap; // sentaks hatasý çünkü default ctor silindi
 }
+
+//12_07_08_2024
+void func(Myclass&&)
+{
+	// bu fonksiyon þu an boþ
+}
+
+int main() {
+	Myclass m;
+	func(std::move(m));
+	// burada m nesnesinin kaynaðý çalýnacak mý? Tabii ki de hayýr. Bir fonksiyona R value olarak gönderilmesi kaynaðýnýn çalýnacaðý anlamýna gelmiyor.
+	// Kaynaðýnýn çalýnýp çalýnmamasý func fonksiyonunun nasýl implemente edildiðine baðlý. 2 yolu var. 
+	// 1- Ya ayný sýnýf türünden nesneyi hayata getiricem
+	// 2- Ya da ayný sýnýf türünden nesneye atama yapýcam
+}
+
+void func(Myclass&& r) {
+	Myclass mx = r; // Burada kaynak çalýnmasý olmaz çünkü r bir L value. 
+	Myclass my = std::move(r); // Burada kaynak çalýnýr çünkü artýk r bir R value
+}
