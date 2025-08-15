@@ -1,0 +1,314 @@
+Big 3
+	-Destructor
+	-Copy Constructor
+	-Copy assignment
+Big 3 kuralý, Modern CPP öncesi, eðer yukarýdaki 3 adet special member functiondan birini biz yazar isek diðer iki fonksiyonu da
+	bizim yazmamýz gerektiðini söyleyen kural. Modern CPP'de olmamasýnýn sebebi dile Move Ctor/assignment fonksiyonlarýnýn eklenmesinden dolayý.
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+												
+#include <iostream>
+
+class Eng{};
+
+void foo(const Eng&);	// 1- Bu fonksiyon const L value ref türünden deðer alýyor
+void foo(Eng&&);		// 2- Bu fonksiyon R value ref türünden deðer alýyor
+/* Yukarýdaki fonksiyonlara ek 2 adet daha fonksiyon yazýlabilir*/
+
+/*
+void foo(Eng&);
+void foo(const Eng&&); -> hoca bu fonksiyonun semantik karþýlýðý olmadýðýný söyledi. Daha ileride anlatabilirmiþ
+*/
+Eng bar();
+Eng&& baz();
+int main() {
+	Eng myeng;
+
+	foo(myeng); // myeng L value expression olduðu için 1. fonksiyon çaðrýlacak
+	/*
+		Temporary Object diye bir konu görücez ileride. Alttaki ifade onla alakalý. Temporary objectlerin isimleri olmuyor. 
+			Ýsimleri olmadýðý için R value expression. 
+	*/
+	Eng{}; // Bu bir temp object. Ýsmi yok, deðer kategorisi R value
+	foo(Eng{}); // Eng{} r value olduðu için 2. fonksiyonu çaðýracak.
+
+	/*
+		R value oluþturmanýn derste hocanýn anlattýðýna göre 2 yolu daha var.
+		1- static cast kullanmak
+		2- std::move fonksiyonunu kullanmak.
+			Hoca bu fonksiyonu ileride anlatacak. Dediðine göre yanlýþ isimlendirilmiþ bir fonksiyon. Çünkü 'move' yani hareket saðlamýyor.
+				Aldýðý L value kategorisine sahip nesne alýyor R value döndürüyor. R value alýyor R value döndürüyor. Yani her türlü R value döndürüyor.
+	static_cast<Eng&&>(myeng); 
+	std::move(myeng);
+	*/
+
+	foo(bar()); // bar'ýn geri dönüþ deðeri R value deðer kategorisinde. 2. fonksiyon çaðrýlacak
+	foo(baz()); // 2. fonksiyon çaðrýlacak.
+
+	foo(Eng{}); 
+}
+// C türü tür dönüþüm operatörlerini kullanmak yerine, istisnai durumlar harici, ilk önceliðimiz her zaman CPP diline ait tür dönüþüm operatörleri olmalý.
+Fallback Mekanizmasý: L value deðerler için copy constructor çaðrýlýyor. R value deðerler için move constructor. Eðer herhangi bir sebepten dolayý
+	move constructor yok ise hem L hem R value deðerler copy constructorý çaðýracak. Buna fallback deniyor. Eðer foo(Eng&&) fonksiyonu olmasaydý
+		R value deðer kategorisindeki ifadeler foo(const Eng&) fonksiyonunu çaðýracaktý. 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+																MOVE CONSTRUCTOR
+Derleyicinin yazdýðý Move constructor/assignment fonksiyonu, sýnýfýn
+	-non statik
+	-inline
+	-public fonksiyonu -> bu durum bütün special member functionlar için geçerli.
+Eðer bir nesne hayatýna halen daha devam edecek, kullanýlacak bir nesnenin kaynaklarýný alýyor ise bu iþlem
+	copy constructor tarafýndan deep copy olarak yapýlacak. Fakat nesnenin kaynakalarý alýndýktan sonra, bu nesne bir daha kullanýlmayacak
+		destructor ile hayatýna son verilecek ise, yok edilecek nesnenin kaynaklarýný 'çalmak' için Move constructor çaðrýlacak.
+	Yani ana sýnýf nesnesinde tutulan adresler yeni sýnýf nesnesine aktarýlacak. Bu çalma iþlemiyle beraber ana sýnýf nesnesi
+		statei destructable olarak deðiþtirilecek ve destructor çaðrýldýðýnda kaynaklarýnýn çalýndýðýný bildiði için onlarý free etmeye çalýþmayacak. 
+	move constructora gelen nesneler R value referans deðer kategorisinde. Yani move fonksiyonu mutator durumunda. 
+Move constructor/assignmentýn bir hatanýn önüne geçmekten öte daha verimli hale getirme durumu var. Çünkü move ctor/asg olmasaydý bile
+	copy constructor ile yapýlabilirdi fakat bu da programýn yavaþlamasýna veriminin düþmesine sebep olurdu. Varlýk nedeni Gereksiz kopyalamalardan kaçýnmak
+
+class Myclass {
+public:
+	Myclass(Myclass&&); // move constuctor -> mutator
+	Myclass(const Myclass&); // copy constructor -> accessor
+
+	Myclass& opeeator=(const Myclass&); // copy assignment
+	Myclass& operator=(Myclass&&); // move assignment
+};
+Hayata getirirken copy constructor deðil move constructor ile hayata getirecez.
+class Myclass {
+public:
+	Myclass(const Myclass& r) : ax(r.ax), bx(r.bx), cx(r.cx){};
+	/*
+		R parametre deðiþkeni L value reference olduðu için data memberlarý hayata getirirken l value data type olarak hayata getirdi.
+			
+		Bir R value referansý tutan parametre deðiþkeninin veri türü L value veri türündendir. Yani 'Myclass&& r' ifadesindeki r, R value referansýna sahip
+			iken r'ýn kendisi L value reftir. Move constructorýn çaðrýlabilmesi için gönderilen ifadelerin R  value expression olmasý gerekiyor.
+			ax(r.ax) ifadesindeki r.ax L value ref olduðu için move constructor için uygun deðil. Bizim bu ifadeyi compile timeda R value expressiona döndürmemiz
+				gerekiyor. Bunu da std::move() fonksiyonu ile yapýyoruz.
+	*/
+
+class Myclass {
+public:
+	Myclass(const Myclass& r) : ix(r.ix), dx(r.dx), cx(r.cx) {}; // copy ctor
+	Myclass(Myclass&& r) : ix(std::move(r.ix)), dx(std::move(r.dx)), cx(std::move(r.cx)) {}; // move ctor
+private:
+	int ix;
+	double dx;
+	char cx;
+};
+
+Eðer sýnýf nesnesinde HANDLE kullanýlmýyor ise Rule of Zerodan dolayý kodun derleyici tarafýndan yazýlmasýna izin vermek gerekiyor.
+
+11. derste kullandýðýmýz String sýnýfýna yazýcam Move constructorýný
+
+#define _CRT_SECURE_NO_WARNINGS
+#include <iostream>
+
+class String {
+public:
+	
+
+	String& operator=(const String& other)
+	{
+		if (this == &other) // eðer bu true dönerse self-assignemnt var demek.
+			return *this;
+		mlen = other.length();
+		std::free(mp);
+		mp = static_cast<char*>(std::malloc(mlen + 1));
+		if (!mp) {
+			std::cerr << ("cannot allocate memory\n");
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, other.mp);
+		return *this;
+	}
+	String(const String& other) : mlen(other.mlen) // eðer burada mlen'i MIL ile hayata getirmeseydik derleyici otomatik olarak default initialization yapacaktý
+	{
+		mp = static_cast<char*>(std::malloc(mlen + 1));
+		if (!mp) {
+			std::cerr << ("cannot allocate memory\n");
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, other.mp); // other.mp kopyalama iþlemi yaptýðýmýz sýnýf nesnesinden deðiþkenin referansýný kullanarak adreste tutulan yazýyý
+		// yeni adrese kopyalýyoruz.
+	}
+	String(String&& other) : mlen(other.mlen), mp(other.mp)  // copy constructor
+	{ 
+		/*
+			Hayata sona erecek nesnenin pointerý ve string uzunluðu kopyalandý. String sýnýfýnýn destructorý
+				eðer mp nullptr tutmuyor ise free ediyor. Bundan dolayý bizde mp'yi nullptr yapýyoruz. Bu sayede ömrü sona eren
+					nesnenin destructorý çaðýrýlsa bile mp free edilmiyor. 
+		*/
+		other.mp = nullptr;
+		other.mlen = 0; // bunu neden 0 yaptýðýmýzý hoca ileride anlatýcam dedi
+	}
+
+
+	String(const char* p) : mlen(std::strlen(p))
+	{
+		mp = static_cast<char*>(std::malloc(mlen + 1));
+		if (!mp) {
+			std::cerr << ("cannot allocate memory\n");
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, p);
+	}
+	~String()
+	{
+		if (mp)
+			std::free(mp);
+	}
+	std::size_t length()const
+	{
+		return mlen;
+	}
+	void print()const
+	{
+		std::cout << '[' << mp << ']' << '\n';
+	}
+private:
+	std::size_t mlen;
+	char* mp;
+};
+
+int main() {
+	String str(String{ "Bugun hava cok guzel" });
+	str.print();
+} 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+																	MOVE ASSIGNMENT
+
+class Myclass {
+public:
+	Myclass(const Myclass& r) : ix(r.ix), dx(r.dx), cx(r.cx) {}; // copy ctor
+	Myclass(Myclass&& r) : ix(std::move(r.ix)), dx(std::move(r.dx)), cx(std::move(r.cx)) {}; // move ctor
+	Myclass& operator=(const Myclass& r) // copy asg
+	{
+		ax = r.ax;
+		bx = r.bx;
+		cx = r.cx;
+		return *this;
+	}
+
+	Myclass& operator(Myclass&& r) // move assignment
+	{
+		ax = std::move(r.ax);
+		bx = std::move(r.bx);
+		cx = std::move(r.cx);
+
+		return *this;
+	}
+private:
+	int ix;
+	double dx;
+	char cx;
+};
+
+HANDLE sistemleri için move assignment içine resource release yapmamýz gerekiyor. Resource release yapýldýktan sonra 
+	deðerleri atýyoruz ve en son olarak kaynaðýn adresini nullptr yapýyoruz. 
+String& operator=(String&& other)
+{
+	if (this == &other)
+		return *this;
+	std::free(mp); // bunu yapmamýzýn sebebi kaynak sýzýntýsý önlemek
+	mlen = other.mlen;
+	mp = other.mp;
+
+	other.mp = nullptr;
+	other.mlen = 0;
+	return *this;
+}
+-------------------------
+
+#define _CRT_SECURE_NO_WARNINGS
+#include <iostream>
+
+class String {
+public:
+	
+
+	String& operator=(const String& other)
+	{
+		if (this == &other) // eðer bu true dönerse self-assignemnt var demek.
+			return *this;
+		mlen = other.length();
+		std::free(mp);
+		mp = static_cast<char*>(std::malloc(mlen + 1));
+		if (!mp) {
+			std::cerr << ("cannot allocate memory\n");
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, other.mp);
+		return *this;
+	}
+	String(const String& other) : mlen(other.mlen) // eðer burada mlen'i MIL ile hayata getirmeseydik derleyici otomatik olarak default initialization yapacaktý
+	{
+		mp = static_cast<char*>(std::malloc(mlen + 1));
+		if (!mp) {
+			std::cerr << ("cannot allocate memory\n");
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, other.mp); // other.mp kopyalama iþlemi yaptýðýmýz sýnýf nesnesinden deðiþkenin referansýný kullanarak adreste tutulan yazýyý
+		// yeni adrese kopyalýyoruz.
+	}
+	String(String&& other) : mlen(other.mlen), mp(other.mp)  // copy constructor
+	{ 
+		/*
+			Hayata sona erecek nesnenin pointerý ve string uzunluðu kopyalandý. String sýnýfýnýn destructorý
+				eðer mp nullptr tutmuyor ise free ediyor. Bundan dolayý bizde mp'yi nullptr yapýyoruz. Bu sayede ömrü sona eren
+					nesnenin destructorý çaðýrýlsa bile mp free edilmiyor. 
+		*/
+		other.mp = nullptr;
+		other.mlen = 0; // bunu neden 0 yaptýðýmýzý hoca ileride anlatýcam dedi
+	}
+	String& operator=(String&& other)
+	{
+		if (this == &other)
+			return *this;
+		std::free(mp); // bunu yapmamýzýn sebebi kaynak sýzýntýsý önlemek
+		mlen = other.mlen;
+		mp = other.mp;
+
+		other.mp = nullptr;
+		other.mlen = 0;
+		return *this;
+	}
+
+	String(const char* p) : mlen(std::strlen(p))
+	{
+		mp = static_cast<char*>(std::malloc(mlen + 1));
+		if (!mp) {
+			std::cerr << ("cannot allocate memory\n");
+			std::exit(EXIT_FAILURE);
+		}
+		std::strcpy(mp, p);
+	}
+	~String()
+	{
+		if (mp)
+			std::free(mp);
+	}
+	std::size_t length()const
+	{
+		return mlen;
+	}
+	void print()const
+	{
+		std::cout << '[' << mp << ']' << '\n';
+	}
+private:
+	std::size_t mlen;
+	char* mp;
+};
+
+int main() {
+	String str(String{ "Bugun hava cok guzel" });
+	str.print();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+L value deðer kategorisine sahip, hayatýna devam eden bir nesnenin kaynaklarýný çalmak.
+1:23
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
