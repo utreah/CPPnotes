@@ -271,7 +271,7 @@ public:
 		mp = other.mp;
 
 		other.mp = nullptr;
-		other.mlen = 0;
+		other.mlen = 0; -> bunu aþaðýda açýklýyorum. "Moved-from state"
 		return *this;
 	}
 
@@ -309,6 +309,173 @@ int main() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 L value deðer kategorisine sahip, hayatýna devam eden bir nesnenin kaynaklarýný çalmak.
-1:23
+#include <iostream>
+int main() {
+	{
 
+		std::string str(10000, 'A'); // buna filler deniyor. String 10bin adet A ile dolduruluyor.
+
+		std::string sx = str; // copy constructor çaðrýlýr.
+
+		/*
+			str burada L value deðer kategorisine sahip bir nesne. stryi artýk kullanmayacam o yüzden kaynaklarýný çalmak için
+				std::move kullanýcam.
+		*/
+
+		std::string sy = std::move(str);
+		/*
+			std::move ile str nesnesi R value deðer kategorisine verildi ve kaynaklarýný bu sayede çaldým.
+			Buna maruz kalmýþ kaynaðý çalýnmýþ nesnelere "moved-from state/object" deniyor
+		*/
+
+	} // buraya geldiðinde destructor çaðrýlacak
+
+}
+Aksi belirtilmedikçe, standart kütüphanelerinde veya üçüncü parti kütüphanelerde moved-from state/objectler için þu 3 garanti var.
+
+a) Valid state guarantee (geçerli durum garantisi)
+	Çalýnmýþ nesne hala geçerli olmalý, yani sýnýfýn invariantlarý(doðru çalýþmasý için gereken temel koþullar) bozulmamýþ
+		durumda olmalý. Standart kütüphane/3. parti kütüphaneler(aksi belirtilmedikçe) bu garantiyi saðlýyor. 
+
+b) Unspecified state guarantee (belirsiz durum garantisi)
+	Taþýnmýþ nesnenin deðerleri belli deðildir. Standarta göre hangi deðeri tuttuðunu bilemeyiz. Yalnýzca geçerli bir nesne olduðunu biliriz(valid state)
+		Yani nesne içerisindeki fonksiyonlar, destructor vs çalýþmasý gerektiði þekilde çalýþmaya devam eder.
+	std::string s1 = "abc";
+	std::string s2 = std::move(s1); 
+		Bu iþlem sonrasýnda hem s1 hem s2 birer std::string'tir ama içinde ne var bilemeyiz. Boþ da olabilir, "abc" de kalmýþ olabilir.
+		.size(), .length() gibi fonksiyonlar çaðrýldýðýnda hiçbir problem yaþanmaz program çökmez, sorunsuz destruct edilebilir.
+
+c) Destructible and Assignable guarantee
+	Moved-from nesne her zaman destruct edilebilir veya yeni bir deðer atamasý yapýlabilir.
+
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string s1 = "Merhaba Dunya";
+    std::string s2 = std::move(s1);
+
+    std::cout << "s2: " << s2 << "\n";  // Beklenen: "Merhaba Dünya"
+    std::cout << "s1 (moved-from): '" << s1 << "'\n";
+    std::cout << "s1.size(): " << s1.size() << "\n"; // standart kütüphane moved-from state implementasyonunda size'ý 0 yapýyor.
+
+    // s1 hâlâ güvenle kullanýlabilir yani assignment yapýlabilir(3. garanti)
+    s1 = "Tekrar atandi";
+    std::cout << "s1 yeniden: " << s1 << "\n";
+}
+s2: Merhaba Dunya
+s1 (moved-from): ''
+s1.size(): 0
+s1 yeniden: Tekrar atandi
+
+
+Moved from stateteki nesnenin kullanýlmasý Undefined Behaviour oluþturmaz. 
+	Mülakatlarda sorulabilir.
+Moved-from stateteki nesnenin kullanýlabilme garantisini söyleyen kütüphanenin kendisi.
+	Standart kütüphane bize söylüyor geçerli olup olmadýðýný.
+	3. parti kütüphaneler ise doðru dökümante edilmiþ ise bize invalid veya valid state olup olmadýðýný söylemesi gerek.
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Kopyalama iþlemi yapýlan nesnelere copyable class deniyor. Ama bazý nesneler var ki bunlarýn kopyalanmasý ya mantýklý deðil(gereksiz)
+	ya da probleme sebebiyet verebiliyor. Bunun önüne geçmek için copy ctor ve copy assignment delete ediliyor sýnýftan. 
+Kopyalamaya kapatýlmýþ sýnýflara 'Non-copyable class' deniyor.
+
+class Eng{
+public:
+	Eng(const Eng&) = delete;
+	Eng& operator=(const Eng&) = delete;
+}
+
+int main(){
+	Eng x, y;
+	x = y; // sentaks hatasý
+}
+
+Bazý sýnýflarda ise kopyalama yasak iken move iþlemleri(moveable) serbest olabiliyor. Bu sýnýflara move-only class deniyor.
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+															DERLEYICI NE ZAMAN SPECIAL MEMBER FUNCTIONLARI YAZAR
+Special member functionlarýn user-defined type haline getirilmesi durumunda fonksiyonun kodu derleyici tarafýndan yazýlmaz.
+
+
+class Eng{
+
+};
+1- Sýnýfýn hiçbir fonksiyonu bildirilmemiþ ise derleyici tarafýndan bütün Special Member fonksiyonlarý yazýlýr.
+2- Special member fonksiyonlar default keywordü ile bildirilmiþ ise derleyici tarafýndan yazýlýr.
+	class Eng{
+	public:
+		Eng() = default;
+		~Eng() = default;
+		Eng(const Eng&) = default;
+		Eng& operator=(const Eng&) = default;
+		Eng(Eng&&) = default;
+		Eng& operator=(Eng&&) = default;
+	};
+
+
+1- Default ctor parametre ile bildirilmiþ ise kodu derleyici tarafýndan yazýlmaz. Diðer special member fonksiyonlarýn kodu derleyici tarafýndan yazýlýr.
+	class Eng{
+	public:
+		Eng(int); // kodu derleyici tarafýndan yazýlmayacak, diðer 5 fonksiyonu derleyici yazýcak
+		~Eng() = default;
+		Eng(const Eng&) = default;
+		Eng& operator=(const Eng&) = default;
+		Eng(Eng&&) = default;
+		Eng& operator=(Eng&&) = default;
+	};
+2- DÝKKAT: Destructor bildirildiði zaman sýnýfýn move fonksiyonlarý(move ctor ve assignment) yok. Bunlarýn kodu derleyici tarafýndan yazýlmaz.
+	copy ctor ve assignmentýn kodu yazýlýyor fakat bu TEHLÝKELÝ! Bu durum deprecated edilmiþ durumda yani ileride gelecek bir standartta sentaks hatasý olabilir.
+	class Eng{
+	public:
+		~Eng();
+		Eng() = default;
+		Eng(const Eng&) = default;
+		Eng& operator=(const Eng&) = default;
+		// move ctor ve assgn derleyici yazmayacak.
+	};
+3- Copy constructor bildirildiðinde default constructor, move constructor ve assignment derleyici tarafýndna yazýlmayacak.
+	Sadece destructor, copy assignment default edilecek.
+	class Eng{
+	public:
+		Eng(const Eng&);
+		~Eng() = default;
+		Eng& operator=(const Eng&) = default;
+	};
+		Herhangi bir constructor declare edildiðinde derleyici defaultu yazmayacak.
+4- Copy assignment bildirildiðinde, move ctor ve move assignment default edilmeyecek.
+	class Eng{
+	public:
+		Eng& operator=(const Eng&);
+		Eng() = default;
+		~Eng() = default;
+		Eng(const Eng&) = default;
+	};
+5- Move constructor bildiriðinde, default ctor ve move assignment yazýlmayacak, copy constructor ve assignment ise delete edilecek. 
+	class Eng{
+	public:
+		Eng(Eng&&);
+		~Eng() = default;
+		Eng(const Eng&) = delete;
+		Eng& operator=(const Eng&) = delete;
+	};
+6- Move assignment bildirildiðinde, move ctor yazýlmayacak, copy ctor ve assignment delete edilecek.
+	class Eng{
+	public:
+		Eng& operator=(Eng&&);
+		Eng() = default; 
+		~Eng() = default;
+		Eng(const Eng&) = delete;
+		Eng& operator=(const Eng&) = delete;
+	};
+
+
+- Bir sýnýfa herhangi bir ctor bildirirsek(default hariç) derleyici default ctoru yazmayacak.
+- Bir sýnýfýn her zaman destructorý vardýr.
+- Bir sýnýfa eskiden büyük 3lü denilen -> destructor, copy ctor, copy assignmentlardan herhangi birini bildirirseniz
+	derleyici move memberlarý bildirmez. Yani move memberlarý YOK!
+- Býr sýnýfa move memberlardan birini bildirirseniz derleyici copy memberlarý delete eder.
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
