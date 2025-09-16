@@ -1,0 +1,473 @@
+															TEMPORARY OBJECTS(GECICI NESNELER)
+.
+Bir deðiþkenin ismini temp yapmak onu 'temp object' yapmaz. 
+	int temp -> geçici bir nesne deðil, otomatik ömürlü 
+Geçici nesneler PR value deðerine sahiptir.
+
+Temporary class object oluþtururken sýnýfýn ismi + küme veya süslü parantez kullanarak yapabiliriz.
+
+class Myclass{
+public:
+	Myclass();
+	Myclass(int);
+};
+
+int main(){
+	Myclass(); -> geçici bir nesne
+	// Eðer sýnýfýn parametreli bir constructorý var ise
+	Myclass(44); -> bu þekilde
+}
+
+Eðer bir nesneyi isimlendirmemize gerek yok ise, isimlendirmeden de kullanabilecek isek temp object oluþturmak mantýklý.
+
+					NEREDE KULLANILIR?
+-Bir sýnýf nesnesine ilk deðer atamak için kullanýlabilir.
+	auto m = Myclass{5};
+-Bir fonksiyonun parametresi sýnýf türünden nesne ise 
+	void func(Myclass);
+	int main(){
+		func(Myclass{12});
+	}
+-Temp nesneler PR deðer kategorisine sahip olduðu için referanslar söz konusu olduðunda verilen deðer ya R value olmalý ya da const L value referansý olmalý.
+	int main(){
+		Myclass& mr = Myclass{}; // sentaks hatasý, sol taraf referansa sað taraf referansý baðlýyoruz.
+		const Myclass& cmr = Myclass{}; // OK
+	}
+------------------------------------------------------------
+
+
+int main()
+{
+	Myclass m{4, 5};
+	func(m);
+	/*
+		Burada geçici nesne kullanmayarak;
+		1- Kodu okuyacak kiþiye m nesnesinin ileride kullanýldýðý düþüncsini veriyoruz
+		2- Eðer m bir daha kullanýlmayacak ise ekstra kaynak kullanýmý söz konusu.
+		3- m nesnesi otomatik ömürlü bir nesne olduðu için tanýmlandýðý bloðun sonuna kadar hayatta kalacak. Ýleride yapýlacak isimlendirmede
+			sorun çýkartabilir. Ek olarak kapsam sýzýntýsýna neden oluyor.
+	*/
+}
+
+Geçici nesneler içerisinde bulunduklarý ifadenin(full expression) tamamlanmasý ile hayata veda ediyorlar.
+---------------------------------------------------------------
+Yukarýda anlatýlanlar C++17 standartý öncesine ait. 17 ile baya bi deðiþti dil
+
+Myclass m{4, 5}; -> Bu artýk bir nesne deðil(PR value expr) fakat bazý durumlar söz konusu olduðunda nesne olabilir
+	Buna "Temporary Materialization"
+Hangi durumlarda Temporary Materialization
+
+1- Bir referansa baðlama
+	const Myclass &r = Myclass{3, 4};
+2- Ýfadeden bir nesne oluþturursak
+	Myclass m = Myclass{3, 4};
+---------------------------------------------------------------
+																	Mandatory  COPY ELISION
+Eðer geçici olarak oluþturulmuþ bir nesne, referans ile baðlanmýþ deðil ise, bir otomatik ömürlü sýnýf nesnesine deðer atamak için kullanýldýðýnda
+	PR deðer kategorisine sahip ifadelerin nesne sayýlmamasýndan dolayý(baðlanacak ifade bulana kadar nesne deðiller -temp materialization-) 
+	deðer atama iþlemi copy ctor ile deðil default ctor ile oluyor. 
+C++17 standartý öncesinde bu Copy elision olayý derleyiciler tarafýndan optimizasyon için yapýlýyordu. Bunun sayesinde copy/move ctor olmasa bile
+	deðer atama iþlemini hata almadan yapabiliyoruz.
+	
+#include <iostream>
+class Myclass {
+public:
+	Myclass()
+	{
+		std::cout << "Default constructor\n";
+	}
+	~Myclass()
+	{
+		std::cout << "Destructor\n";
+	}
+	Myclass(const Myclass&)
+	{
+		std::cout << "Copy ctor\n";
+	}
+};
+
+int main() {
+	Myclass m1 = Myclass{};
+	Myclass m2 = Myclass{ Myclass{} };
+	/*
+		Yukarýdaki ifadeler için sadece 1 defa default ctor çaðýrýlacak. Temp nesneler PR deðer kategorisine sahip olduklarý için
+			bir nesneye baðlanana kadar nesne sayýlmýyorlar. Bundan dolayý copy ctor çaðrýlmayacak ve direkt olarak init edilecek. En sondada m1 ve m2 nesneleri
+				için default ctor çaðýrýlacak.
+	*/
+}
+---------------------------------------------------------------
+														COPY ELISION - GARANTI OLDUÐU DURUMLAR
+Öncellikle Mandatory copy elision ile guaranteed Copy elision ayný deðil. 
+1- Geçici nesne ifadesini baþka bir geçici ifade nesnesini oluþturmak için argüman olarak kullandýðýmýzda.
+int main() {
+	Myclass m2 = Myclass{ Myclass{ Myclass{} } };
+
+}
+
+2- Parametre deðiþkeni bir sýnýf türünden olan bir fonksiyona parametre olarak göndermek.
+void func(Myclass);
+int main()
+{
+	func(Myclass{});
+}
+
+Yukarýdaki 2 senaryo dýþýnda da garanti olduðu durumlar var. O senaryolar Exception Handling konusunda iþlenecek.
+---------------------------------------------------------------
+
+Return Value Optimization(RVO)
+	RVO ayný zamanda Unnamed RVO þeklinde de söylenebiliyor.
+	Bir fonksiyonun geri dönüþ deðeri bir geçici nesne(PR deðer kategorisi) ile yapýldýðýnda, bu nesne için copy/move ctor çaðýrmak yerine
+		sadece tek bir sefer default ctor ile yapýlýyor. Bu optimizasyon derleyici tarafýndan yapýlýyor
+ÖNEMLÝ NOT: URVO için, fonksiyonun geri dönüþ deðeri olarak verilen nesne ilk olarka move ctor ile bellekte derleyici tarafýndan oluþturulmuþ
+	geçici bir nesneye atanýyor. Eðer sýnýf içerisinde move ctor delete edilir ise sentaks hatasý verecek.
+
+
+Geri dönüþ deðeri bir sýnýf türünden olan bir fonksiyondan döndürülen temp objectin bir nesneye baðlanmasý
+Myclass func()
+{
+	return Myclass{};
+}
+int main()
+{
+	Myclass m = func(); 
+}
+
+Named Return Value Optimization(NRVO)
+	NVRO ise URVO'nun isimlendirilmiþ hali. Diðer fark ise bu ifadeler L deðer kategorisine sahip olmak zorunda olmasý.
+	m1 nesnesi L deðer kategorisine sahip olduðu için derleyici tarafýndan geçici olarak oluþturulmuþ nesneye copy ctor ile kopyalanacak.
+		Sýnýf içerisinden copy ctor delete edilirse sentaks hatasý olur.
+Myclass func()
+{
+	Myclass m1;
+	return m1;
+}
+int main()
+{
+	Myclass m = func(); 
+}
+---------------------------------------------------------------
+Bir PR expression initializer olmadan kullanýlmasý durumunda full expression deðerlendirmesi ile ifadenin sonunda destructorýn 
+	çaðrýlmasý durumunda temporary materialization gerçekleþecek. Derleyiciye baðlý bir durum deðil bu.
+#include <iostream>
+class Myclass {
+public:
+	Myclass()
+	{
+		std::cout << "Default constructor\n";
+	}
+	~Myclass()
+	{
+		std::cout << "Destructor\n";
+	}
+};
+
+int main()
+{
+	Myclass{};
+}
+---------------------------------------------------------------
+---------------------------------------------------------------
+---------------------------------------------------------------
+---------------------------------------------------------------
+---------------------------------------------------------------
+---------------------------------------------------------------
+															CONVERSION CONSTRUCTOR(DÖNÜÞTÜREN KURUCU IÞLEV)
+Sýnýfýn özel üye fonksiyonlarýndan deðil bu. 
+
+Özellikle tek parametreli constructorý kullanarak implicit olarak dönüþüm iþlemi yapýlýyor. Yani bir fonksiyona çaðrý yapýlarak dönüþüm yapýyor. 
+	Function overloading kýsmýnda Function overloading resolutionda dönüþüm kýsmýnda 'user-defined' türler için standartta olmayan
+		bizim görmediðimiz bir dönüþüm olduðundan bahsetmiþtik. Burada da o oluyor. Parametreli constructorlar kullanýlarak sýnýf türünden olmayan
+			bir nesne o türe temp object vasýtasý ile dönüþtürülüyor.
+#include <iostream>
+class Myclass {
+public:
+	Myclass() = default;
+	Myclass(int x)
+	{
+		std::cout << "Myclass(int x) = " << x << '\n';
+		std::cout << "this = " << this << '\n';
+	}
+	~Myclass()
+	{
+		std::cout << " Destructor this = " << this << "\n";
+	}
+};
+
+int main()
+{
+	Myclass m;
+	m = 5; // Normalde 5 int türünden, m ise Myclass türünden olduðu için sentaks hatasý olmasý gerek(parametreli myclass'ý silersek sentaks hatasý)
+			// fakat parametreli constructor sayesinde 5, arka planda temp object oluþturularak M nesnesine move assignment ile atanýyor. 
+			// çünkü oluþturulan ifade PR deðer kategorisine sahip. 
+}
+Eðer move assignment sýnýf içerisinde bildirilmez veya copy assignment bildiriler ise(copy bildirildiðinde move assignment derleyici tarafýndna yazýlmýyor)
+	fallbackten dolayý copy assignment ile yapýlacak bu atama iþlemi.
+---------------------------------------------------------------
+
+#include <iostream>
+class Myclass {
+public:
+	Myclass(){
+		std::cout << "Default constructor this = " << this << "\n";
+	}
+	Myclass(int x)
+	{
+		std::cout << "Myclass(int x) = " << x << '\n';
+		std::cout << "this = " << this << '\n';
+	}
+	Myclass& operator=(Myclass&& r)
+	{
+		std::cout << "Move assignment\n";
+		std::cout << "this = " << this << "\n";
+		std::cout << "&r = " << &r << "\n";
+		return *this;
+	}
+	~Myclass()
+	{
+		std::cout << "Destructor this = " << this << "\n";
+	}
+};
+
+int main()
+{
+	Myclass m;
+	m = 5;
+	(void)std::getchar();
+}
+
+Yukarýdaki kodda, 5 ifadesi için parametreli constructor çaðrýlacak, daha sonra move assignment fonksiyonuna parametre
+	deðiþkeni olarak gidecek ve burada deðeri m nesnesine atandýktan sonra hayatý sona erecek. Bu sona erme iþlemi getchar()'a gelmeden
+	önce olacak yani bloktan çýkmayý beklemeyecek hayatýnýn sona ermesi için. 
+
+Conversion constructor ile yapýlan dönüþümler genellikle kiþinin istemesiyle yapýlýyor.
+	Fakat bu durum ayný zamanda çok büyük bir risk kaynaðý.
+#include <iostream>
+#include <vector>
+class Myclass {
+public:
+	Myclass() {
+		std::cout << ".";
+	}
+
+};
+
+int main()
+{
+	using namespace std;
+	size_t n{ 100'000 };
+	vector<int> ivec(n); // bu 100'000 adet int türünden nesneyi tutan bir konteyner oluþturacak. Burada bir problem yok.
+
+}
+
+#include <iostream>
+#include <vector>
+class Myclass {
+public:
+	Myclass() {
+		std::cout << ".";
+	}
+
+};
+
+Derleyici dönüþüm yapma durumunda;
+	Önce standart dönüþüm sonra da user-defined dönüþüm yapýyor ise bunu yapacak.
+	Veya tam tersi önce User-defined sonra standart yapýyor ise bunun dönüþümünü yapacak. Fakat
+	iki kere user-defined conversion yapýyor ise bunu örtülü olarak yapmayacak.
+
+Bu dönüþümler çok tehlikeli durumlara yol açabiliyor. 
+1- Ambiguity(belirsizlik) : Bir tipin baþka bir tipe nasýl dönüþtürüleceði, araya hangi user-defined conversion’un gireceði belirsizleþebilir.
+struct A {
+    operator int();
+};
+struct B {
+    operator int();
+};
+void func(int);
+
+A a;
+B b;
+func(a); // A -> int (tamam)
+func(b); // B -> int (tamam)
+// Ama A -> int -> B gibi zincir olursa, hangi yolu seçmesi gerektiði belirsizleþir.
+---------------------------------------------------------------
+
+int main()
+{
+	Myclass m;
+	double dval{};
+	bool flag{};
+	m = dval; // dval önce standart conversion ile int türüne dönüþecek daha sonra ise user-defined dönüþüm ile Myclass türüne. 
+	m = flag; // yukarýdaki ile ayný sýra
+}
+---------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	size_t n{ 100000 };
+	vector<Myclass> ivec2; // Myclass türünden nesneleri tutacak bir konteyner. Vector sýnýfýnda fill adlý bir fonksiyon var ve
+	// bu fonksiyon konteynýrý o deðerler ile dolduruyor. Eðer ben yanlýþlýkla ivec2 nesnesine, n nesnesini atar isem
+	// az önce öðrendiðimiz conversion constructordan dolayý konteyner 100'000 adet nesne ile doldurulacak.
+	ivec2 = n;
+	// fakat burada sentaks hatasý var bunun sebebi ise explicit constructor.
+
+}
+																		EXPLICIT CONSTRUCTOR
+Bir fonksiyonun geri dönüþ deðerinden önce, constructorýn ismi yazýlmadan önce explicit keywordünun yazýlmasý ile o fonksiyonu
+	örtülü tür dönüþümlerinin olmasýný engelliyor hale getiriyoruz. Dönüþümler sadece tür dönüþümü operatörleri ile yapýlabilir hale geliyor.
+	Yani normalde derleyicinin durumdan vazife çýkararak yaptýðý dönüþümler(örtülü/implicit) artýk yapýlmýyor. 
+
+class Myclass{
+public:
+	Myclass() = default;
+	explicit Myclass(int);
+}
+
+int main()
+{
+	Myclass m;
+	int ival{242};
+	m = 5; // sentaks hatasý verecek çünkü implicit conversion yapýlmýyor
+	m = static_cast<Myclass>(ival); // sentaks hatasý olmayacak çünkü dönüþüm explicit olarak yapýlacak.
+}
+
+
+NOT: Eðer aksi bir durum yok ise, tek parametreli fonksiyonlarý explicit olarak tanýmlamalýyýz. Ýstenmeyen dönüþüm problemleriyle boðuþmamak için
+---------------------------------------------------------------
+ÖNEMLI!! Constructor explicit hale getirildiðinde copy initialization sentaks hatasý oluyor.
+class Myclass {
+public:
+	Myclass() = default;
+	Myclass(int);
+
+};
+int main()
+{
+	Myclass m1 = 10; // copy init
+	Myclass m2(10); // direct init
+	Myclass m3{ 10 }; // direct list init
+}
+Yukarýdaki ilk deðer verme iþlemlerinde hiçbir sentaks hatasý yok iken, Myclass(int) constructorýnýn explicit yapýlmasýyla copy initialization
+	sentaks hatasý oluyor
+
+class Myclass {
+public:
+	Myclass() = default;
+	explicit Myclass(int);
+
+};
+int main()
+{
+	Myclass m1 = 10; // copy init -> bu artýk sentaks hatasý
+	Myclass m2(10); // direct init
+	Myclass m3{ 10 }; // direct list init
+}
+
+---------------------------------------------------------------
+Specifierlarýn sadece bildirimdemi yoksa tanýmdamý ya da ikisinde de bulunmasý gerektiðini kararlaþtýran bir kural yok.
+	Her bir specifier için tek tek ezberlenmesi gerek.
+
+explicit keywordü bildirimde kullanýldýktan sonra tanýmda da kullanýlýrsa sentaks hatasý verecek.
+
+class Myclass {
+public:
+	Myclass() = default;
+	explicit Myclass(int);
+
+};
+explicit Myclass::Myclass(int) {}; // sentaks hatasý olacak explicit tanýmda da kullanýlmýþ.
+
+noexcept specifier ise her iki yerde de kullanýlmasý gerekiyor.
+---------------------------------------------------------------
+int main(){
+	Myclass x = {}; // Bu þekilde yazmak Myclass x = Myclass{}; ile ayný. Eðer default ctor explicit yapýlýrsa bu sentaks hatasý olacak
+}
+---------------------------------------------------------------
+class Myclass {
+public:
+	explicit Myclass(int);
+
+};
+Myclass foo()
+{
+	return 12321; // constructor explicit ise bu sentaks hatasý deðil ise örtülü dönüþüm olacak. Geri dönüþ deðeri derleyici tarafýndan bellekte
+					// ayrýlmýþ bir alana KOPYALANIR. Constructorý explicit yaparak bu copy initializationu engellemiþ oluyoruz.
+}
+
+void func(Myclass);
+int main()
+{
+	int x{123213};
+	func(x); // constructor explicit olduðu için bu sentaks hatasý verecek.
+}
+---------------------------------------------------------------
+Burada iki constructor overload edilmiþ durumda. int parametreli ctor explicit olduðu için overload kýsmýna dahil edilmiyor bile. Bundan dolayý
+	m = 12 ifadesi standart conversion ile int türünden double türüne deðiþtiriliyor ve double parametreli ctor ile copy initialize ediliyor. 
+#include <iostream>
+class Myclass {
+public:
+	explicit Myclass(int) { std::cout << "Int parametre\n"; }
+	Myclass(double) { std::cout << "Double parametre\n"; }
+};
+int main()
+{
+	Myclass m = 12;
+}
+---------------------------------------------------------------
+																		DELEGATING CONSTRUCTOR
+Bir sýnýf nesnesini hayata getiren constructor data memberlarý initialize etmek için baþka bir constructorý kullanarak yapýyor. 
+	Bu delege iþlemi Constructor initializer list kýsmýnda yapýlýyor. CIL kýsmýnda delegating constructor dýþýnda baþka bir ifade BULUNAMAZ.
+
+
+class Myclass{
+public:
+	Myclass(int, int, int);
+	Myclass(int, int);
+	Myclass(int x ) : Myclass(x , x, x);
+	Myclass(int, const char*);
+}
+
+
+class Myclass{
+public:
+	Myclass(int, int, int);
+	Myclass(int, int);
+	Myclass(int x ) : Myclass(x , x), mz{123}; // sentaks hatasý çünkü delegating constructorýn yanýnda baþka bir ifade daha var
+	Myclass(int, const char*);
+private:
+	int mx, my, mz;
+}
+
+Data memberlar için direct init kullanýlabilir delegate constructor ile.
+class Myclass{
+public:
+	Myclass(int, int, int);
+	Myclass(int, int);
+	Myclass(int x ) : Myclass(x , x);
+	Myclass(int, const char*);
+private:
+	int mx, my, mz{123}; // bu ok
+}
+---------------------------------------------------------------
+																ARKADAÞLIK BILDIRIMLERI
+Bir kod friend bildirimi yapýldýysa, friend bildirimi yapýlan sýnýfýn private ve protected alanlarýnda tanýmlanmýþ data memberlarý eriþime açýlýyor.
+	Bu friend bildirimi client kodlarý için yapýlmýyor. Zaten mantýken friend bildirimi yerine public alanda tanýmlama yapardýk.
+	Sýnýfýn kendi kodlarýnýn private bölümünde bulunan kodlara eriþmesine izin veriyoruz friend bildirimi ile.
+	Global fonksiyonlar sýnýfýn private kýsmýna eriþemiyor. 
+
+Þu 3 duruma friendlik verilebiliyor
+
+1- Global bir fonksiyona friendlik vermek
+2- Bir baþka sýnýfýn bir üye fonksiyonuna firendlik vermek
+3- Bir sýnýfýn tamamýna friendlik vermek. 
+
+Public interface: Baþlýk dosyasýnda, client kodun kullanabileceði tüm elemanlarý kapsýyor. 
+---------------------------------------------------------------
+---------------------------------------------------------------
+---------------------------------------------------------------
+---------------------------------------------------------------
+---------------------------------------------------------------
+---------------------------------------------------------------
+---------------------------------------------------------------
+---------------------------------------------------------------
+---------------------------------------------------------------
