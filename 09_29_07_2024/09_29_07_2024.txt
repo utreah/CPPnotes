@@ -16,7 +16,6 @@ void func_(myClass* p, int x); // mx ve my deðiþkenlerine eriþemez
 
 3- Global fonksiyonlar ile member fonksiyonlar için kullanýlan name lookup kurallarý farklý.
 ---------------------------------------------------------------------------------------
-
 			Member fonksiyonlarýn tanýmý nasýl yapýlýr?
 
 1- .cpp dosyasýnda fonksiyonun normal tanýmý yapýlýr. Normal fonksiyondan tek fark fonksiyon
