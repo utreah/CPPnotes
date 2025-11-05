@@ -448,7 +448,7 @@ public:
 private:
 	int mx, my, mz{123}; // bu ok
 }
----------------------------------------------------------------
+---------------------------------------------------------------f
 																ARKADAÞLIK BILDIRIMLERI
 Bir kod friend bildirimi yapýldýysa, friend bildirimi yapýlan sýnýfýn private ve protected alanlarýnda tanýmlanmýþ data memberlarý eriþime açýlýyor.
 	Bu friend bildirimi client kodlarý için yapýlmýyor. Zaten mantýken friend bildirimi yerine public alanda tanýmlama yapardýk.
