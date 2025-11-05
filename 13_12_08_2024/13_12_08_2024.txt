@@ -390,7 +390,7 @@ public:
 };
 Myclass foo()
 {
-	return 12321; // constructor explicit ise bu sentaks hatasý deðil ise örtülü dönüþüm olacak. Geri dönüþ deðeri derleyici tarafýndan bellekte
+	return 12321; // constructor explicit ise bu sentaks hatasý, deðil ise örtülü dönüþüm olacak. Geri dönüþ deðeri derleyici tarafýndan bellekte
 					// ayrýlmýþ bir alana KOPYALANIR. Constructorý explicit yaparak bu copy initializationu engellemiþ oluyoruz.
 }
 
