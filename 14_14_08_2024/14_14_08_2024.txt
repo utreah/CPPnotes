@@ -1,0 +1,272 @@
+Þu 3 duruma friendlik verilebiliyor(13. dersin sonundan)
+* friendin nerede bildirildiðinin hiçbir önemi yok. Ýstersek protected veya public veya private kýsmýnda bildirimini yapalým.
+	hiçbir farký yok.
+1- Global bir fonksiyona friendlik vermek
+	Aþaðýdaki kodda friend specifierýný almýþ foo fonksiyonunu tanýmladýðýmýzda, bu fonksiyon içerisinde Myclass
+		sýnýfýnýn private regionunda bulunan data memberlara eriþebiliyoruz. 
+	class Myclass {
+	public:
+		friend int foo(int);
+	private:
+		int mx;
+		void bar();
+	};
+
+	int foo(int) {
+		Myclass m;
+		auto val = m.mx;
+		m.bar();
+	}
+
+hidden friend(s) -> ileride görülecek.
+
+* friend fonksiyon sýnýfýn içerisinde inline(implicitly) olarak tanýmlanýlabilir.
+class Myclass{
+public:
+	friend int foo(int){
+		// kod
+	}
+};
+-------------------
+	friend kýsmý silindiðinde/yorum satýrýna alýndýðýnda ise sentaks hatasý verecek ayný kod.
+	class Myclass {
+	public:
+		//friend int foo(int);
+	private:
+		int mx;
+		void bar();
+	};
+
+	int foo(int) {
+		Myclass m;
+		auto val = m.mx;
+		m.bar();
+	}
+
+--------------------------------------------------------
+2- Bir baþka sýnýfýn bir üye fonksiyonuna friendlik vermek
+Ýlk friend örneðinde fonksiyonun bildirimini vermemiz derlenme için yeterliydi tanýmýný görmese de olurdu. Eðer baþka bir sýnýfýn
+	fonksiyonuna friendlik veriyor isek o fonksiyonun tanýmýný görmek zorundayýz.
+class Myclass {
+public:
+	friend int Nec::foo(); // bu sentaks hatasý verir 
+private:
+	int mx;
+	void bar();
+}; 
+Yukarýdaki sentaks hatasý forward declaration ile de çözülemez.
+	Forward Declaration: Sýnýf nesnesinin ismini vererek bildirim yapma. Nesnenin tanýmý yok örneðin Nec için
+	class Nec; yazmak Forward Declaration.
+-------------------
+class Nec{
+public:
+	int foo();
+};
+class Myclass {
+public:
+	friend int Nec::foo(); // artýk sentaks hatasý yok çünkü nec sýnýfýnýn foo fonksiyonu tanýmlandý.
+private:
+	int mx;
+	void bar();
+}; 
+int Nec::foo(){
+	Myclass m;
+	m.mx = 4;
+	m.bar();
+}
+--------------------------------------------------------
+3- Bir sýnýfýn tamamýna friendlik vermek
+	Bir sýnýfýn fonksiyonuna friendlik verirken o sýnýfýn tanýmýnýn yapýlmýþ olmasýný istiyordu. Fakat bir sýnýfýn tamamýna friendlik
+		verirken bu zorunluluk yok. Bu sýnýf herhangi bir yerde bildirilip/tanýmlandýðýnda sýnýfýn tüm üyeleri Myclass sýnýfýnýn protected
+			ve private kýsýmlarýna eriþebilecek.
+class Myclass{
+public: 
+	friend class Nec;
+private:
+	int mx;
+	void bar();
+};
+-------------------
+class Myclass{
+public: 
+	friend class Nec;
+private:
+	int mx;
+	void bar();
+};
+class Nec{
+	void foo(){
+		Myclass m;
+		++m.mx;
+		m.bar();
+	}
+	void func(){
+		Myclass m;
+		++m.mx;
+		m.bar();
+	}
+}
+--------------------------------------------------------
+1- A sýnýfýnýn B sýnýfýna friendlik vermesi durumunda A sýnýfý B sýnýfýnýn private/protected regionlarýna eriþemez.
+	Sadece B sýnýfý A sýnýfýnýn priv/protected bölgelerine eriþebilir. A sýnýfýnýn friendlik vermesi B'nin de ona verdiði anlamýna gelmez.
+2- Transitivity yok. 3 sýnýf nesnemiz var ve þu sýrayla friend verilmiþ olsun. A ==> B ==> C. Yani A, B'ye friendlik vermiþ. B'de C'ye friendlik vermiþ.
+	B sýnýfý A sýnýfýnýn priv/procteced regionlarýna eriþebilir, C sýnýfý B sýnýfýnýn regionlarýna eriþebilir iken C sýnýfý A sýnýfýnýn regionlarýna
+		eriþemez. Yani aralarýnda aktarma yok! Sonuçta babamýzýn dedemizin arkadaþlarý bizim de arkadaþýmýz deðil(olabilir ama deðil)
+3- friendlik sýnýfýn içerisinde private regiondaki sadece belirli fonksiyonlara verilemez. Yani bar fonksiyonuna eriþebilsin ama baz'a eriþemesin diye bir þey yok
+	Yukarýdaki durum doðrudan yapýlamýyor fakat Attorney - client idiomu ile yapýlabiliyor. Ýleri CPP'de görülecek.
+
+----------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------
+															OPERATOR OVERLOADING
+
+CPP dilinde bir sýnýf nesnesi bir operatörün operandý haline geldiðinde derleyici dilin kurallarýndan dolayý bu operatör kullanýmlarýný
+	fonksiyon çaðrýmý þeklinde yapýyor. Bunlara operator function(s) deniyor. Bu çaðrý yapýlan fonksiyonlar 
+		ya 'free function' ya da 'non-static member function' olabilir.
+	Compile time'a yönelik bir mekanizma bu.
+
+	Matrix sýnýf türünden nesnelerimiz var. Bunlarý bir takým iþlemlere sokmak istiyoruz.
+	m1 * m2 + m3 * m3; -> Bu nesneler önce m1 ve m2 için çarpma iþlemini yapabilecek bir fonksiyon çaðrýlacak
+							m3 ve m3 çarpma iþlemi için nfonksiyon çaðrýlacak ve daha sonra bu iki deðeri toplayan bir fonksiyon çaðrýlacak.
+	add(multiply(m1, m2), multiply(m3, m3)) -> gibi gibi
+
+	Intuitive(sezgisel): Yani yapýlan iþleme(operator overloading) bakýldýðýnda ne amaçlandýðýnýn anlaþýlabilir olmasý gerek. 
+--------------------------------------------------------
+--------------------------------------------------------
+--------------------------------------------------------
+--------------------------------------------------------
+															Operator Overloading Kurallari
+1-Operandlardan en az bir tanesinin sýnýf veya enum türünden olmasý gerek.
+class Myclass;
+int main(void){
+	int i1 = 1,
+	int i2 = 2;
+	i1 + i2; // burada operator overloading yok çünkü ikisi de primitive type
+	
+	Myclass m1, m2;
+	m1 + m2; // Burada operator overloading var,
+	m1 + i1; // var
+}
+
+2- Operator overloading için overloading fonksiyonu yazýlacak operatörün, CPP'nin operatör kümesi içerisinde bulunmasý gerek.
+class Myclass;
+int main(){
+	Myclass m1, m2;
+	m1 @ m2; // @ cppnin operatör kümesinde yok yani böyle bir overload olamaz!
+}
+
+3- Overloadu yazýlan operatörün fonksiyonunun adý rastgele olamaz. Template þu þekilde -> operator<operator_sign>
+	Örneðin; 
+		Toplama(+) için -> operator+
+		Çarpma(*) için -> operator*
+		Subscript([]) için -> operator[]
+
+4- Bazý operatörlerin overloadu dil tarafýndan yasaklanmýþ durumda. Bunlar;
+	- sizeof
+	- . (member selection-dot operator)
+	- ? : (ternary operator)
+	- :: (scope resolution)
+	- .* (member pointer dereference)
+	- ->*
+Bunlara ek olarak ->  , (comma operator) -> bu overload edilebiliyor ama çooooook nadir.
+
+5- Bazý operatörler free function olamýyor. Bunlar member function olmak zorunda
+	1- () ==> function call
+	2- [] ==> subscript
+	3- -> ==> arrow
+	4- =  ==> assignment
+	5- type cast operator function
+
+6- Tüm operatör fonksiyonlarý isimleriyle de çaðrýlabilir. Normalde operatör notasyonu ile çaðýrýyoruz ama isimlerini de kullanabiliriz.
+class Myclass {
+public:
+	
+};
+int main() {
+	Myclass m1, m2;
+	m1 = m2; // burada assignment fonksiyonu çaðýrýlacak
+
+	m1.operator=(m2); // bu þekilde de kullanabiliriz. 
+}
+
+Yani operatorun notasyonunu kullanmak yerine neden ismini yazalým?
+	1- Bazý durumlarda ismini kullanmak gerekebilir
+	2- Bazý durumlarda isminin kullanýlmasý daha iyi kabul edilebilecek senaryo olabilir. 
+
+7- Bir operatör fonksiyonu hariç, operatör fonksiyonlarý default argument alamazlar. 
+	Default argument alabilen -> function call operator ==> ();
+
+	Burasý biraz karmaþýk olabilir. Bu operatör fonksiyonlarý ikiye ayrýlýyordu global(free) ve member function olarak.
+	Ve operatörlerin aritysi deðiþtirilemez. Arity dediðimiz þey operatörün unary veya binary olma durumu. Eðer tek operand var ise unary
+		iki var ise binary oluyor. Bu deðiþtirilemez.
+
+	BINARY OPERATORLER ÝÇÝN;
+	Operator overloading fonksiyonlarý global fonksiyon olarak yazýlýr ise;
+	- binary operatörlerin function overloadlarýnýn tam olarak 2 adet parametresi olmak zorunda. 1 olamaz 3 olamaz.
+	- fonksiyonun ilk parametresi operatörün sol operandý, ikinci parametresi sað operandý olacak.
+	- binary operatörler için, eðer parametre sayýsý 2 deðilse sentaks hatasý. 
+		class Matrix {
+		public:
+	
+		};
+		bool operator<(const Matrix&,); // sentaks hatasý çünkü < operatörü binary, iki parametreye ihtiyaç var.
+	x > y için ==> operator>(x, y); þeklinde çaðrý yapýlacak.
+
+	Eðer fonksiyon member function olarak tanýmlandý ise,
+	-Parametre deðiþkeni binary operatörler için 1 olacak. Bunun sebebi ise sol operatörün sýnýf içindeki operator fonksiyonuna çaðrý yapýlmak
+		için kullanýlýyor. Fonksiyonlar non-static member function olduðu için this pointeri var. This pointerý sol operandýn adresini döndürecek.
+
+	x > y için ==> x.operator>(y); þeklinde çaðrý yapýlacak. 
+
+	UNARY OPERATORLER ÝÇÝN;
+
+	-Global(free) overloadlarýn Parametre deðiþkeni sayýsý 1 olmak zorunda. Deðil ise sentaks hatasý
+	Global fonksiyonlar:
+		!ptr;
+		operator!(ptr)
+	-Eðer member fonksiyon ise parametre deðiþkeni olmayacak.
+	Member fonksiyonlar:
+		!ptr;
+		ptr.operator!();
+
+	ÖNEMLÝ!!
+		Operatör overloadlarýnda 4 adet dikkat edilmesi gerekilen operatör var. Bu operatörlerin farklý kullanýmlarý var.
+		+ -> hem toplama hem de iþaret(pozitiflik)
+			x + y -> toplama
+			+x -> sign
+		- -> hem çýkarma hem de iþaret(negatiflik)
+			x - y -> çýkarma
+			-x -> sign
+		* -> hem çarpma hem de dereferencing
+			x * y -> çarpma
+			*x -> dereference
+		
+		& -> bitwise and ve addressof
+			x & y -> bitwise and
+			&x -> address of x
+		Bunlarý overload ederken dikkat etmek gerekiyor. Örnek
+
+		class String{
+		public:
+			String operator+()const; // normalde bunun sentaks hatasý olmasýný bekleriz çünkü + bir binary operator ve member function olduðu için 1 adet 
+								// parametre deðiþkeni olmasý gerek. Ama burada + operatörü sign için overload edilmiþ. ÖNEMLÝ!!
+			String operator+(String)const; // bu toplama iþlemi için
+		};
+
+8- Operator overloading fonksiyonlarý statik member function olamazlar 
+
+9- Operatör öncelik seviyesi ve operatör öncelik yönü deðiþtirilemez. Associativity
+class Bigint {
+
+};
+Bigint operator*(const Bigint&, const Bigint&);
+Bigint operator+(const Bigint&, const Bigint&);
+Bigint operator&(const Bigint&, const Bigint&);
+int main() {
+	Bigint b1, b2, b3, b4, b5;
+	auto bx = b1 * b2 + b3 * b4 & b5;
+	// auto bx = ((b1 * b2) + (b3 * b4)) & b5;
+	// bx.operator=(operator&(operator+((operator*(b1, b2), operator*(b3, b4)), b5)); -> Eðer notasyon olmasaydý böyle yazmamýz gerekecekti. KARMAÞIK ABOV
+}
+
+
+1:38
