@@ -268,5 +268,173 @@ int main() {
 	// bx.operator=(operator&(operator+((operator*(b1, b2), operator*(b3, b4)), b5)); -> Eðer notasyon olmasaydý böyle yazmamýz gerekecekti. KARMAÞIK ABOV
 }
 
+Eðer operatör overloadlarý sýnýfýn üye fonksiyonu olsaydý parametre deðiþkenleri 1 azalacak.
+class Bigint {
+public:
+Bigint operator*(const Bigint&)const;
+Bigint operator+(const Bigint&)const;
+Bigint operator&(const Bigint&)const;
+};
+int main() {
+	Bigint b1, b2, b3, b4, b5;
+	auto bx = b1 * b2 + b3 * b4 & b5;
+	// auto bx = ((b1 * b2) + (b3 * b4)) & b5;
+	// bx.operator=(b1.operator*(b2).operator(b3.operator(b4)).operator&(b5))
+}
+--------------------------------------------------------------------
+Neden Global Operatör Fonksiyonlarý var?
+	Operatörlerin sýnýfýn üye fonksiyonlarýnda þöyle bir problem var. Sýnýfýn içerisinde olduklarýnda operatörün sol operandý
+		sýnýf nesnesi olarak kullanýlýyor ve sað operandý fonksiyona argüman olarak yollanýyor.
 
-1:38
+		x + 5; -> bu ifade için x.operator+(5) çaðrýlacak ki hiçbir problem yok. x bir nesne ve 5 deðeri ile toplanacak
+			Peki ya diðer diðer türlü olsaydý. 5 + x ifadesinde 5 bir nesne deðil. Bunu nasýl kullanýcaz?
+				5.operator+(x) gibi bir ifade yazýlamaz bu sentaks hatasý. 
+	Ýkinci sebebi ise farklý bir sýnýfa ait bir operator member functioný baþka bir sýnýfa ait member ile kullanmak mümkün deðil. 
+		Örneðin stream sýnýflarýnda(ostream gibi) cout fonksiyonuna baþka bir sýnýfa ait nesneyi verdiðimizde sentaks hatasý verecke.
+#include <iostream>
+class Matrix {
+
+};
+int main() {
+	Matrix m1;
+	std::cout << m1;
+}
+////////////////////////////
+BU KISMI KENDÝM DE ANLAMADIM BUNU ARAÞTIR(BURADAN AÞAÐISINDAKÝ TÜM NOTLARI 27 SAAT UYKUSUZ IKEN YAZIYORUM KONTROL ETMEKTE FAYDA VAR)
+Yukarýdaki kodda << için hata veriyor çünkü left shift operatörü cout için output streame yazý yazdýrmak için overload edilmiþ.
+	Almasý gereken parametre string/primitive türlerden olmasý gerekirken ona baþka bir sýnýfa ait bir nesne veriyoruz. Eðer cout global fonksiyon
+		olmuþ olsaydý bu sorunla karþýlaþmayacaktýk. Bunu çözmek için 'inserter' dediðimiz bir yöntem var ileride görücez.
+
+	Ek olarak eðer coutu aþaðýdaki þekilde global operatör fonksiyonu olarak kullanýrsak sorun çözülüyor
+#include <iostream>
+class Matrix {
+
+};
+std::ostream& operator<<(std::ostream&, const Matrix);
+int main() {
+	Matrix m1;
+	std::cout << m1;
+}
+////////////////////////////
+
+const correctness operator overload fonksiyonlarý aþýrý önem taþýyor. 
+	1- Kodu sonradan okuyacak kiþiyi yanýltýyor
+	2- R value referanslar parametre deðiþkenine baðlanamýyor çünkü const deðil(const olunca baðlanabiliyor )
+	3- const nesneler bu fonksiyona gönderilemez
+
+	Eðer ortada bir side effect yok ise(parametre deðiþkenleri üzerinde) const kullanmakta fayda var. const correctness çok önemli. 
+
+class Matrix {
+	Matrix operator+(const Matrix m2)const; // Mmeber function için parantez içerisindeki const sað operand için, parantez dýþýndaki
+											// terminatorden önceki const ise sol operand için. Sonuçta bu m1.operator+(m2) þeklinde olacak. 
+};
+Matrix operator+(const Matrix m1, const Matrix m2); // Global fonksiyonlar için her iki parametre deðiþkeninde deðeri deðiþmiyor ise bu þekilde.
+
+Unary operatörler(iþaret, logic deðil vs) için de const dýþarýda olacak.
+class Matrix{
+	bool operator!()const;
+	Matrix operator+()const; // sign operator
+};
+
+Eðer fonksiyon mutator ise const olmamalý! Compound assignment operatörleri gibi
+
+class Matrix{
+	Matrix operator*=(int); // *= operatörü sol operandýn deðerini deðiþtirecek bundan dolayý const deðil.
+	Matrix operator*=(const int); // bu þekilde de olabilir ama buradaki const redundant(gereksiz) pass by value olarak geliyor zaten.
+									// referans olsaydý o zaman const olmasý gerekiyor
+	Matrix operator*=(const int&); // þimdi redundant deðil çünkü pass by reference var eðer const olmaz ise deðer deðiþiyor anlamýna geliyor.
+};
+
+---------------------------------------------------------------------------------------------
+											FONKSIYONUN GERÝ DÖNÜÞ DEÐERÝ TÜRÜ(RETURN VALUE TYPE)
+.
+Fonksiyonun geri dönüþ deðerini problem domainindeki ihtiyaç belirliyor. Ýki stringi karþýlaþtýran bir operatör fonksiyonu
+	bool döndürebilir. 
+
+	Hepsi için geçerli bu. Mesela rastgele referans döndürmemeliyiz.
+
+	1- Eðer döndürdüðümüz referans otomatik ömürlü bir nesne ise bu dangling pointer/reference. 
+	class Matrix{
+		Matrix& operator+(const Matrix&)const{
+			Matrix result;
+			return result; // otomatik ömürlü nesne döndürüyoruz dangling reference oluþacak.
+		}
+	};
+	2- Sol operandý referans olarak döndürmekte saçma. m1 ve m2 matrix nesnelerimzi olsun bunlarý topladýðýmýzda
+		geri döndürülecek deðer m1 olacak. Tekrardan m3 sýnýf nesnesiyle topladýðýmýz da gene m1'in referansý döndürülecek.
+		Eðer fonksiyonda herhangi bir mutate iþlemi yapýlýyor ise iþler iyiyce karýþacak. 
+
+	3- Dinamik ömürlü bir nesnenin referansýný return edebiliriz bu UB veya sentaks hatasý oluþturmuyor fakat o dinamik ömürlü nesneyi
+		kim silecek/free edecek. 
+
+	Fonksiyonun geri dönüþ deðerini sýnýf türünden yapmaktan çekinmemeliyiz. 
+
+	Geri dönüþ deðeri döndürüldüðü sýrada named return value optimizationda bir problem olur ise move semantics devreye girecek. 
+		-> RVO copy/move ctor çaðýrmak yerine bu nesneleri default ctor ile hayata getiriyor. Ondan dolayý bir problem ortaya çýkar
+			ve RVO çalýþmaz ise move semantics devreye giriyor
+
+Operatör fonksiyonlarýnýn döndürdüðü geri dönüþ deðerini, özellikle side effecti olmayan, discard etmek(ýskartaya çýkarmak) 
+	genellikle mantýklý deðil. Çünkü discard eder isek o fonksiyonu çaðýrmýþ olmamýzýn hiçbir amacý yok. Nesneler üzerinden hiçbir deðiþiklik olmayacak.
+	Fonksiyonun geri dönüþ deðerinin discard edilmesini engellemek için [[nodiscard]] attributeunu kullanabiliriz.
+class Bigint {
+	[[nodiscard]] Bigint operator+(const Bigint&)const;
+};
+---------------------------------------------------------------------------------------------
+Operatör overloadlarý global mi olsun member mi olsun?
+
+Buna net bir cevap yok. Bazý kiþilerin kendilerine göre ilkeleri var ama mükemmel deðiller.
+Hoca çoðu kiþi simetrik operatör ilkesine uyduðunu söyledi.
+Simetrik operatör: Eðer operandlarýn yerleri deðiþtiðinde halen ayný iþleme denk geliyorsa global fonksiyon olabilir.
+	Bu yapýlan iþlem ayný kaldý o zaman deðer de ayný kalacak anlamýnda deðil. Deðer deðiþebilir.
+	x + y -> eðer bunu y + x yazdýðýmýzda iþlem deðiþmiyor ise global fonksiyon olarak yazabiliriz. Bunun sonucunda deðer deðiþeblir
+		ama iþlem ayný. x + 5 ile 5 + x ayný iþlem gibi olsa da class member function için uygun deðil. 
+	Aritmetik operatörler, Karþýlaþtýrma Operatörleri, Compound asssignment operatörleri simetrik operatörlere örnek.	
+---------------------------------------------------------------------------------------------
+
++ ve = operatörlerinin overload edilmesi += compound operatörünün otomatik olarak implemente edildiði anlamýna gelmiyor.
+	Ayriyetten onu da overload etmemiz gerek.
+
+class Myclass{
+	Myclass operator+(const Myclass&)const;
+	Myclass operator=(const Myclass&);
+	// Myclass operator+=(const Myclass&); -> bunu da tanýmlamamýz gerek. Bu hepsi için geçerli *= /= vs
+};
+
+CPP 20 ile dile yeni bir operatör eklendi <=> (üç yollu karþýlaþtýrma operatörü) bu operatörün dile eklenmesiyle 
+	6 adet olan karþýlaþtýrma operatörlerini overload etmemize gerek kalmadý. Ve bu operatör default edilebiliyor. Normalde
+		sadece sýnýfýz özel fonksiyonlarý default edilebilirken bu da default edilebiliyor. Eðer sýnýfýn içerisinde == operatör
+			fonksiyonu tanýmlandý ise üç yollu karþýlaþtýrma operatörü default ediliyor. 
+
+// Aþaðýdaki kod cpp17 ile compile edildiðini farz et
+class Eng{
+public:
+	bool operator==(const Eng&)const; // eðer bunu yazmaz isek == sentaks hatasý verecek
+};
+
+int main(){
+	Eng e1, e2;
+	e1 == e2; // eðer fonksiyonu kendimiz tanýmlamaz isek bu sentaks hatasý.
+	e1 != e2; // sentaks hatasý, != operatörü overload edilmemiþ durumda
+}
+----------------
+Aþaðýdaki kod cpp20 ile derleniyor
+class Eng{
+public:
+	bool operator==(const Eng&)const;
+};
+int main(){
+	Eng e1, e2;
+	e1 == e2; // sentaks hatasý yok == tanýmlanmýþ durumda
+	e1 != e2; //  sentaks hatasý gene yok çünkü == operatörünün fonksiyonu tanýmlandýðýnda <=> operatörünün fonksiyonu default edildi
+	e1 < e2; 
+	e1 <= e2; 
+}
+
+---------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------
+
+
+
+
