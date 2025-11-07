@@ -1,0 +1,67 @@
+Sýnýfýmýzý yazmaya baþlamadan önce bir interface oluþturmamýz gerek. Önce kodu yazýp sonra interfacei onun üstüne yedirmeye çalýþmak
+	gibi bir þey yapmamalýyýz. Interface'i önceden tasarlayarak yazmamýz gereken kodu da az çok ölçebiliyoruz. Ayný zamanda kolaylýk saðlýyor
+		ne yapacaðýmýza dair.
+Interface'i yaparken olabildiðince client için kullanýmý kolay ve rahat olmalý. Implementasyon ne kadar karmaþýk olur, nasýl olur
+	diye düþünmeden kullanýlmasý kolay ve basit tutulmalý. 
+
+Öncellikle Myint sýnýfýmýzýn constructorlarý ile baþlayacaðýz. 
+	Default init edilecek ve 0 deðeri ile hayata gelecekler
+#pragma once
+class Mint {
+public:
+	Mint();
+	explicit Mint(int x); // diðer türlere dönüþümünü engellemek için explicit constructor yaptýk.
+
+private:
+};
+
+
+Output için operator<< , input için operator>> operatörlerini overload edicez. Bunlar friend olarak tanýmlanacak ama bu faydalarý ileride
+	anlatýcam dedi hoca.
+	1- global bir fonksiyon friend olmazsa o fonksiyon sýnýfýn private bölümüne eriþemez. 
+	 
+
+
+---------------------------------------------------------------------------------------------------
+class Myclass {
+public:
+	friend void func(int);
+};
+int main(){
+	func(12); // name lookup hatasý verecek. Derleyici func ismini bulamayacak.
+}
+friend functionlar scope olarak sýnýf scope içerisinde deðil. Sadece friend bildirimini class scope içinde yapýyoruz.
+
+
+class Myclass {
+public:
+	friend void func(Myclass); // Bu konu namespace ile alakalý(ADL adlý konu ile alakalý)
+				// ileride öðrenicez bunlarý
+				// ADL = Argument Dependent Lookup
+};
+int main(){
+	Myclass m;
+	func(m); 			
+}				
+---------------------------------------------------------------------------------------------------
+cout << x;	-> inserter
+cin >> x;	-> extractor
+
+Bu mint tarzý yazýlan sýnýflar kaynak tüketen sýnýflar deðiller. Bu tarz sýnýflara wrapper sýnýflar deniliyor. Amaçlarý
+	içlerinde T türünden bir deðiþken tutuyor ve bu deðiþken üzerinde bir takým iþlemler yapýyor 
+---------------------------------------------------------------------------------------------------
+output/input streamine direkt olarak sýnýf nesnesini veremiyoruz. Çünkü sýnýf nesnemiz o stream sýnýfýnýn içerisinde bulunan tanýmlý bir sýnýf deðil. 
+	Bundan dolayý ostream baþlýk dosyasý içerisinde bulunan std::ostream, istream baþlýk dosyasýnda std::istream sýnýflarýný kullanýyoruz. Bunlarý kullanarak
+		kendi sýnýf nesnemizi ostream üzerinden yazdýrabiliyoruz. 
+Bunlarýn genel yazýlým þekli þöyle. stream zaten include ettiðimiz baþlýk dosyasýnda tanýmlý olduðu için hiçbir iþlem yapmadan
+	direkt bitwise left shift operatörüyle bilgilerimizi aktarýyoruz. Stream operator fonksiyonunun geri dönüþ deðeri std::ostream& yani ostream left 
+		value reference olduðu için direkt bunu return edebiliriz.
+friend std::ostream& operator<<(std::ostream& os, const Mint& m) {
+	return os << "[" << m.mval << "]" << "\n";
+}
+--------------------------------------------
+Aritmetik operatörlerin implemente edilirken genellikle ilk olarka + operatörü sonra da + operatörünü kullanarak += operatörünun fonksiyonu yazýlýyor.
+	Myers'e göre bu durum tam tersi þeklinde yapýlmalý. Ýlk olarak += implemente edip + operatörünün fonksiyonu içinde kullanmak. 
+
+
+	1:34
