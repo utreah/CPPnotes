@@ -62,6 +62,129 @@ friend std::ostream& operator<<(std::ostream& os, const Mint& m) {
 --------------------------------------------
 Aritmetik operatörlerin implemente edilirken genellikle ilk olarka + operatörü sonra da + operatörünü kullanarak += operatörünun fonksiyonu yazýlýyor.
 	Myers'e göre bu durum tam tersi þeklinde yapýlmalý. Ýlk olarak += implemente edip + operatörünün fonksiyonu içinde kullanmak. 
+	 
+CPP'de primary operators ve secondary operators kavramlarý var. 
+	Primary operatörler overload edildiði zaman derleyici otomatik olarak o primary operatörü secondary operatörlerde kullanýyor.
+	Örneðin; == operatörü overload edildiðinde, != operatörü tarafýndan kullanýlýyor.
+
+	x != y ifadesi -> !(x == y) ifadesi olarak kullanýlýyor. 
+	Secondary operatörlerinde þöyle bir avantajý var. 
+	5 < x ifadesi(x bir nesne)  sanki x > 5 þeklinde yazýlmýþ gibi yorumlayabiliyor. Bunlar ya ileri cppde ya da
+		CPP kursunun ortalarýnda/sonlarýnda anlatýlacak.
 
 
-	1:34
+
+Prefix ve postfix inc/decrement operatörlerinin implementasyonunda bir farklýlýk var. 
+	C dilinde hem prefix hem postfix inx/dec operatörlerinin oluþturduðu ifade R value deðer kategorisine sahip. Ama CPP'de
+		prefixler L value referans kategorisine sahipler. Class member function olarak implemente edilirken hem prefix hm de postfix
+		geri dönüþ deðerleri harici ayný imzaya sahipler(geri dönüþ imzaya dahil deðil). Postfixi prefixten ayýrmak için postfixe isimsiz, bir
+			adet int parametre deðiþkeni veriyoruz.  Ýsim vermememizin sebebi;
+				-isim verip kullanmaz isek derleyici hata verecek
+				-kodu okuyanýn aklýný karýþtýracaðýz.
+
+
+class Myclass{
+public:
+	Myclass& operator++(); // prefix increment L value ref döndüreceði için kendi sýnýf referansýný döndürüyor
+	Myclass operator++(int); // postfix R value ref döndürecek, imzalarýný farklý kýlmak için int parametre deðiþkeni ekliyoruz.
+};
+
+Bu operatörler free function olarakta implemente edilebilir ama hoca böyle bir durumla hiç karþýlaþmadýðýný söyledi.
+
+Mint& operator++(Mint&); // ++x
+Mint operator++(Mint&, int); // x++
+	Bu kullanýlmayan int parametreye dummy parameter deniliyor.
+
+Þu operatörleri ayrý olarak görülecek.
+-Subscript
+-Dereferencing
+-Member selection(arrow)
+-Type cast
+-operator functions && enumaration types
+Ek olarak array like konusunu da görücez. Array olmayan ama arraymiþ gibi interface sunan sýnýflar. 
+
+
+
+SUBSCRIPT OPERATORUNUN OVERLOAD EDÝLMESÝ
+
+Global function olarak overload edilemiyor. 
+Köþeli parantezin içerisindeki index deðeri argüman olarak alýnýyor.
+Geri dönüþ deðeri dizinin türünden bir l ref value olmalý. Int ise int&, char ise char& gibi.
+arr[5] -> arr.operator[](5);
+	Oluþturulan ifadeler L value expression, bundan dolayý geri dönüþ deðeri l value ref olmalý.
+
+
+																	Reference Qualifiers
+Bazý sýnýflarýn sadece lvalue ref deðer kategorisine sahip nesneler tarafýndan çaðrýlmasýný istediðimiz durudma
+	kullanýlan bir qualifier
+	Sadece member functionlarda kullanýlabiliyor. Free/global fonksiyonlarda kullanýlamýyor.
+class Myclass{
+public:
+	Myclass& operator=(int);
+private:
+	//
+};
+
+int main(){
+	Myclass {} = 45; // burada sentaks hatasý yok tamamen legal fakat atama operatörünün sol operandý bir R value expression
+}
+
+Eðer belirli operatörlerin sadece L value referans(veya R value) kategorisine sahip nesneler tarafýndan kullanýlmasýný istiyor isek
+	L value referans için sona & koymalýyýz.
+
+class Myclass{
+public:
+	Myclass& operator=(int)&; // sona koyduðumuz & ile artýk sadece L value referansa sahip nesneler çaðýrabilir bu operatör overloadu.
+};
+int main(){
+	Myclass {} = 45; // artýk sentaks hatasý
+	Myclass& m{5};
+}
+
+Bazý fonksiyonlarýn sadece L value veya R value expression ile çaðrýlmasýný saðlýyoruz. 
+Bu reference qualifier sadece operatör overloadlarý için geçerli deðil. Ayný zamanda member fonksiyonlar içinde geçerli
+
+
+#include <iostream>
+#include "main.h"
+
+class Myclass {
+public:
+	int func();
+};
+
+int main() {
+	Myclass{}.func(); // sentaks hatasý yok legal, anlamsýz bir kod ama legal
+	Myclass m;
+	m.func(); // bu da legal
+}
+
+------------------
+#include <iostream>
+#include "main.h"
+
+class Myclass {
+public:
+	int func()&;
+};
+
+int main() {
+	Myclass{}.func(); // sentaks, artýk legal deðil
+	Myclass m;
+	m.func(); // bu halen legal
+}
+
+
+Bu reference specifier function overload için de iþe yarýyor çünkü fonksiyonun imzasýný deðiþtiriyor.
+
+class Myclass {
+	int func() const;
+	int func()&;
+	int func()&&; // r value ref için
+	// 3 tane ayrý overload yapabildik onun sayesinde 
+};
+
+
+
+
+
