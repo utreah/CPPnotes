@@ -22,8 +22,43 @@ int main() {
 	std::cout << m1 << "" << m2 << "" << m3 << "Total: " << m1 +  m2 + m3 << "\n";
 }
 ------------------------------------------
+#include <iostream>
+#include "main.h"
+
+
+int main() {
+	Mint x{ 5 };
+	Mint y;
+	y = x++;
+	std::cout << "y = " << y << '\n';
+	std::cout << "x = " << x << '\n';
+
+	y = ++x;
+	std::cout << "y = " << y << '\n';
+	std::cout << "x = " << x << '\n';
+}
 ------------------------------------------
+#include <iostream>
+#include "main.h"
+
+
+int main() {
+	Mint x{ 5 };
+	bool b = !x;
+}
 ------------------------------------------
+#include <iostream>
+#include "main.h"
+
+using namespace std;
+int main() {
+	std::string str = "engin tekturk";
+	cout << str << '\n';
+
+	str[0] = '!';
+	str[4] = '!';
+	cout << str << '\n';
+}
 ------------------------------------------
 ------------------------------------------
 ------------------------------------------

@@ -39,13 +39,22 @@ public:
 		return lhs.mval == rhs.mval;
 	}
 	friend bool operator!=(const Mint& lhs, const Mint& rhs) {
-		return !(lhs == rhs);
-		// return !operator(lhs, rhs);
+		//return !(lhs == rhs);
+		return !operator==(lhs, rhs);
 	}
-	friend bool operator<(const Mint& lhs, const Mint& rhs);
-	friend bool operator<=(const Mint& lhs, const Mint& rhs);
-	friend bool operator>(const Mint& lhs, const Mint& rhs);
-	friend bool operator>=(const Mint& lhs, const Mint& rhs);
+	friend bool operator<(const Mint& lhs, const Mint& rhs) {
+		return lhs.mval < rhs.mval;
+	}
+	friend bool operator<=(const Mint& lhs, const Mint& rhs) {
+		return !(rhs < lhs);
+	}
+	friend bool operator>(const Mint& lhs, const Mint& rhs) {
+		return lhs.mval > rhs.mval;
+		// return rhs < lhs;
+	}
+	friend bool operator>=(const Mint& lhs, const Mint& rhs) {
+		return !(rhs < lhs);
+	}
 
 
 	// mutators
@@ -69,7 +78,41 @@ public:
 		mval %= other.mval;
 		return *this;
 	}
+	Mint& operator++() { //prefix
+		++mval;
+		return *this;
+	}
+	Mint operator++(int) { // postfix
+		/*
+			Burada temp bir değişken oluşturmamızın sebebi postfix inc/dec operatörlerinin değerini arttırdıkları nesnenin
+				eski halini ifadenin sonuna kadar kullanıyor olmaları. Eğer arttırıp direkt normal nesneyi döndürseydiik prefix
+				increment gibi olacaktı bunun önüne geçmek için retval adlı bir temp değişken oluşturup, arttırma öncesi değerini buraya 
+					ilk değer olarak verip daha sonra arttırma işlemini yapıp değeri değişmemiş retvali return ediyoruz. 
+		*/
+		Mint retval{ *this };
+		++*this;
+		// veya operator++() yazarakta prefix operatörü çağırıp değeri arttırıabiliriz. Recursive bir çağrı değil bu
+		return retval;
+	}
+	Mint& operator--() {
+		--mval;
+		return *this;
+	}
+	Mint operator--(int) {
+		Mint retval{ *this };
+		--* this;
+		return retval;
+	}
 
+	Mint operator+()const {
+		return *this;
+	}
+	Mint operator-() {
+		return Mint(-mval);
+	}
+	[[nodiscard]]bool operator!()const {
+		return  static_cast<bool>(mval);
+	}
 	// formatted input-output
 	friend std::ostream& operator<<(std::ostream& os, const Mint& m) {
 		return os << "[" << m.mval << "]" << "\n";
