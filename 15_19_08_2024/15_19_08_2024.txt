@@ -117,7 +117,7 @@ arr[5] -> arr.operator[](5);
 																	Reference Qualifiers
 Bazý sýnýflarýn sadece lvalue ref deðer kategorisine sahip nesneler tarafýndan çaðrýlmasýný istediðimiz durudma
 	kullanýlan bir qualifier
-	Sadece member functionlarda kullanýlabiliyor. Free/global fonksiyonlarda kullanýlamýyor.
+	Sadece non statik member functionlarda kullanýlabiliyor. Free/global fonksiyonlarda kullanýlamýyor.
 class Myclass{
 public:
 	Myclass& operator=(int);
